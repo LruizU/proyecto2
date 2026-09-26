@@ -825,8 +825,8 @@
           <table id="students-breakdown-table" class="table table-hover table-sm align-middle mb-0 dashboard-data-table">
             <thead class="table-light sticky-top">
               <tr>
-                <th scope="col" class="sortable text-center" data-sort="number" style="cursor:pointer; width: 80px;" title="Ordenar por grado">
-                  Grado <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+                <th scope="col" class="sortable" data-sort="string" style="cursor:pointer; width: 160px;" title="Ordenar por código de grupo">
+                  Código Grupo <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
                 </th>
                 <th scope="col" class="sortable" data-sort="string" style="cursor:pointer;" title="Ordenar por modalidad">
                   Modalidad <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
@@ -854,7 +854,7 @@
                   };
                 @endphp
                 <tr>
-                  <td class="text-center font-monospace fw-semibold">{{ $row->grado }}°</td>
+                  <td class="font-monospace fw-semibold small">{{ $row->codigo_grupo }}</td>
                   <td>
                     <span class="badge {{ $modBadgeClass }} font-monospace me-1">{{ $row->modalidad_corta ?? 'TR' }}</span>
                     <span class="fw-semibold small text-uppercase">{{ $row->modalidad ?? 'TRADICIONAL' }}</span>

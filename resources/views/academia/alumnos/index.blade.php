@@ -63,10 +63,11 @@
                 : '<span class="text-muted">—</span>';
         }],
         ['label' => 'CURP', 'field' => 'curp', 'class' => 'small'],
-        ['label' => 'Nivel', 'field' => 'nivel'],
+        ['label' => 'Código Grupo', 'render' => fn ($alumno) => optional($alumno->inscripciones->first()?->grupo)->codigo_grupo ?? ''],
         ['label' => 'Turno', 'render' => fn ($alumno) => '<span class="badge ' . ($alumno->turnoRel && str_starts_with($alumno->turnoRel->descripcion_corta, 'V') ? 'bg-purple' : 'bg-warning') . '">' . e($alumno->turnoRel?->descripcion_corta ?? $alumno->turno) . '</span>'],
         ['label' => 'Sede', 'render' => fn ($alumno) => e($alumno->sede?->descripcion ?? '')],
         ['label' => 'Estatus', 'render' => fn ($alumno) => '<span class="badge badge--status ' . (in_array($alumno->estatus, ['ACTIVO', 'REINSCRITO']) ? 'badge--active' : 'badge--inactive') . '">' . e($alumno->estatus) . '</span>'],
+        ['label' => '% Matrícula', 'render' => fn ($alumno) => optional($alumno->inscripciones->first()?->grupo)->inscritos && optional($alumno->inscripciones->first()?->grupo)->cupo_maximo ? number_format(($alumno->inscripciones->first()->grupo->inscritos / $alumno->inscripciones->first()->grupo->cupo_maximo) * 100, 2) . '%' : '']
     ];
 
     $actions = [

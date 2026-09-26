@@ -94,11 +94,10 @@ class AcademiaDashboardService
             ->select('grupos.codigo_grupo', 'grupos.grado', 'grupos.tipo_grupo', 'grupos.id_campus')
             ->selectRaw('COUNT(DISTINCT alumnos_grupos.numero_alumno) AS alumnos')
             ->groupBy('grupos.codigo_grupo', 'grupos.grado', 'grupos.tipo_grupo', 'grupos.id_campus')
-            ->orderBy('grupos.grado')
+            ->orderBy('grupos.codigo_grupo')
             ->get();
 
-        $aggregated = [];
-        foreach ($rows as $r) {
+        return $rows->map(function ($r) use ($sedesMap): object {
             $partes = explode('-', strtoupper(trim((string) $r->codigo_grupo)));
             $mod = $partes[2] ?? ($r->tipo_grupo ?: 'TR');
             $sedeId = (int) ($partes[1] ?? ($r->id_campus ?: 1));
@@ -114,29 +113,19 @@ class AcademiaDashboardService
 
             $sedeName = $sedesMap[$sedeId] ?? ($sedeId ? "Sede {$sedeId}" : 'Campus Principal');
 
-            $key = "{$r->grado}-{$mod}-{$sedeId}-".($is3C ? '3C' : 'STD');
-            if (! isset($aggregated[$key])) {
-                $aggregated[$key] = (object) [
-                    'grado' => $r->grado,
-                    'tipo_grupo' => $mod,
-                    'modalidad_corta' => $mod,
-                    'modalidad' => $modName,
-                    'id_campus' => $sedeId,
-                    'sede' => $sedeName,
-                    'es_tercer_ciclo' => $is3C,
-                    'alumnos' => 0,
-                    'grupos_count' => 0,
-                ];
-            }
-            $aggregated[$key]->alumnos += (int) $r->alumnos;
-            $aggregated[$key]->grupos_count += 1;
-        }
-
-        return collect(array_values($aggregated))->sortBy([
-            ['grado', 'asc'],
-            ['modalidad', 'asc'],
-            ['id_campus', 'asc'],
-        ])->values();
+            return (object) [
+                'codigo_grupo'   => $r->codigo_grupo,
+                'grado'          => $r->grado,
+                'tipo_grupo'     => $mod,
+                'modalidad_corta'=> $mod,
+                'modalidad'      => $modName,
+                'id_campus'      => $sedeId,
+                'sede'           => $sedeName,
+                'es_tercer_ciclo'=> $is3C,
+                'alumnos'        => (int) $r->alumnos,
+                'grupos_count'   => 1,
+            ];
+        })->values();
     }
 
     private function coursesByCampus(Ciclo $ciclo): Collection
