@@ -15,6 +15,12 @@ Tags permitidos: `#bug` `#arquitectura` `#deuda-tecnica` `#seguridad` `#rendimie
 - Alcance: Configuración en `config/database.php` y migraciones `2026_09_05_*`.
 - Verificación: Auditoría y trazabilidad por lote en `firebird_sync_items`.
 
+## 2026-09-26 — #arquitectura #decision Congelación de Contrato Público y Calidad de Rutas
+- Decisión: Establecer contrato formal de 190 rutas respaldado por `.ai/baseline/routes.json` y la prueba automatizada `tests/Feature/ContratoDeRutasTest.php`.
+- Motivo: Evitar regresiones inadvertidas, rutas huérfanas o eliminación accidental de middleware de autorización `RequireModulePermission`.
+- Alcance: Rutas web/API, comandos `ia baseline` / `php scripts/baseline.php` y suite de verificación.
+- Verificación: `php scripts/comparar_rutas.php` ejecutado con éxito: 190 rutas de baseline vs 190 rutas actuales (Contrato de rutas INTACTO).
+
 ## 2026-09-26 — #arquitectura #decision Inicialización de memoria persistente con Universal Dev Team
 - Decisión: Implementar el protocolo Universal Dev Team organizando la memoria en `memory/` con división por dominios y protocolo de contexto mínimo.
 - Motivo: Reducir drásticamente el consumo de tokens entre sesiones y evitar re-investigación de stack, esquemas y convenciones.

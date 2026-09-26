@@ -25,13 +25,15 @@ Mapa de entidades y relaciones clave no obvias en la base de datos (MySQL princi
 - **Mecanismo:**
   - Cada ejecución de sincronización crea una cabecera en `firebird_syncs` y el desglose de cada registro en `firebird_sync_items`.
   - Clasifica las operaciones como `INSERT`, `UPDATE`, `UNCHANGED` o `ERROR`.
-  - Firebird es tratado como solo lectura: la sincronización nunca escribe en Firebird.
+  - Firebird es tratado como solo lectura: la sincronización nunca escribe en Firebird. Estrategias en `app/Services/SyncStrategies/` (`FullSync`, `CatalogSmartSync`, `CycleDirectSync`, `CustomSync`).
 
 ## Catálogo Espejo Académico (UTE)
 - **Tablas:** `ciclos`, `niveles`, `sedes`, `turnos`, `planes`, `materias`, `profesores`, `alumnos`, `grupos`, `cursos`, `cursos_det`, `horarios_det`.
+- **Modelos:** Ubicados en `app/Models/Academia/` (`Grupo`, `Plan`, `Materia`, `Alumno`, etc.) y raíz de `app/Models/` (`Ciclo`, `Profesor`).
 - **Particularidades:**
   - Espejo relacional en MySQL de los datos de Firebird.
   - Mantiene integridad referencial local con foreign keys para permitir consultas de horarios y asistencias docentes sin impactar la base legacy.
+  - Servicios auxiliares resuelven estados activos: `CicloActualService` (identifica ciclo vigente), `HorarioResolver` (mapea cruces de horarios y profesores) y `PersonaContratosResolver`.
 
 ## Recursos Humanos e Incidencias (`areas`, `puestos`, `incidencias`, `incidencia_approvals`)
 - **Propósito:** Estructura jerárquica de la universidad y ciclo de vida de justificaciones e incidencias laborales.
