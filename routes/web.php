@@ -47,6 +47,13 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('/', [AcademiaDashboardController::class, 'index'])->name('dashboard');
             Route::get('kpis-json', [AcademiaDashboardController::class, 'kpisJson'])->name('kpisJson');
+        // Oferta management
+        Route::resource('ofertas', Academia\OfertaController::class)
+            ->except(['show'])
+            ->middleware('module_permission:academia.ofertas,view');
+        Route::get('ofertas/{oferta}', [Academia\OfertaController::class, 'show'])
+            ->name('ofertas.show')
+            ->middleware('module_permission:academia.ofertas,view');
             Route::get('materias', function () {
                 $ciclo = app('App\Services\CicloActualService')->resolve(request());
                 $summary = app('App\Services\AcademiaDashboardService')->build($ciclo);
