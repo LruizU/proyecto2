@@ -27,7 +27,7 @@
             </div>
         <?php else: ?>
             <div class="table-responsive">
-                <table class="table <?php echo e($striped ? 'table-striped' : ''); ?> <?php echo e($hover ? 'table-hover' : ''); ?> <?php echo e($bordered ? 'table-bordered' : ''); ?> align-middle mb-0">
+                <table class="table table-cards <?php echo e($striped ? 'table-striped' : ''); ?> <?php echo e($hover ? 'table-hover' : ''); ?> <?php echo e($bordered ? 'table-bordered' : ''); ?> align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             <?php $__currentLoopData = $headers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $header): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -59,12 +59,13 @@
                             <tr>
                                 <?php $__currentLoopData = $headers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $header): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <?php
+                                        $headerLabel = $header['label'] ?? $header;
                                         $cellClass = isset($header['class']) ? $header['class'] : '';
                                         if (isset($header['hideOn'])) {
                                             $cellClass = trim($cellClass . ' d-none d-' . $header['hideOn'] . '-table-cell');
                                         }
                                     ?>
-                                    <td class="<?php echo e($cellClass); ?>">
+                                    <td class="<?php echo e($cellClass); ?>" data-label="<?php echo e(e($headerLabel)); ?>">
                                         <?php if(isset($header['render'])): ?>
                                             <?php echo $header['render']($row); ?>
 
@@ -78,7 +79,7 @@
                                     </td>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 <?php if($actions): ?>
-                                    <td class="text-end">
+                                    <td class="text-end" data-label="Acciones">
                                         <?php if($hasHiddenHeaders): ?>
                                             <button type="button"
                                                     class="btn btn-outline-secondary btn-sm me-2"
@@ -113,7 +114,7 @@
                                         </div>
                                     </td>
                                 <?php elseif($hasHiddenHeaders): ?>
-                                    <td class="text-end">
+                                    <td class="text-end" data-label="Más">
                                         <button type="button"
                                                 class="btn btn-outline-secondary btn-sm"
                                                 data-bs-toggle="collapse"

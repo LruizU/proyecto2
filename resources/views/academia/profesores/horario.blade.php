@@ -27,7 +27,7 @@
 
 {{-- Grid horario --}}
 @if (empty($grid))
-    <div class="card">
+    <div class="card profesores-horario">
         <div class="card-body text-center text-muted py-5">
             <i class="bi bi-calendar-x fs-1 mb-2"></i>
             <p>No hay horarios programados para este ciclo</p>
@@ -65,6 +65,9 @@
                                             @foreach ($grid["{$dia}-{$sesion}"]['clases'] as $clase)
                                                 <div class="mb-2 p-2 rounded bg-light border">
                                                     <div class="fw-semibold small">{{ $clase['materia'] }}</div>
+                                                    @if (!empty($clase['codigo_materia']))
+                                                        <div class="horario-codigo">{{ $clase['codigo_materia'] }}</div>
+                                                    @endif
                                                     <div class="small text-muted">{{ $clase['grupo'] }} · {{ $clase['aula'] }}</div>
                                                     <span class="badge {{ ($clase['tipo'] ?? '') === 'PTC' ? 'bg-purple' : 'bg-info' }}">{{ $clase['tipo'] ?? '' }}</span>
                                                 </div>
@@ -83,3 +86,10 @@
     </div>
 @endif
 @endsection
+
+@push('styles')
+<style>
+    .profesores-horario .table td { min-width: 140px; vertical-align: top; }
+    .horario-codigo { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: .68rem; }
+</style>
+@endpush

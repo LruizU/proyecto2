@@ -106,31 +106,68 @@
                 </div>
             </div>
         @else
+            @php
+                $diasSemana = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+                $sesionesHorario = $horarios->flatten(1)
+                    ->sortBy(fn ($clase) => $clase->sesion)
+                    ->pluck('sesion')
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $horarioGrid = $horarios->flatten(1)->groupBy(fn ($clase) => $clase->dia . '-' . $clase->sesion);
+            @endphp
             <div class="card">
-                <div class="card-body p-0">
-                    @foreach ($horarios as $dia => $clases)
-                        <div class="{{ $loop->first ? '' : 'border-top' }}">
-                            <div class="p-3 bg-light border-bottom fw-semibold">
-                                <span class="badge {{ in_array($dia, [6,7]) ? 'bg-purple' : 'bg-primary' }} me-2">
-                                    {{ ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'][$dia-1] }}
-                                </span>
-                                {{ $clases->first()->sesionBase?->descripcion }}
-                            </div>
-                            @foreach ($clases as $clase)
-                                <div class="p-3 border-bottom d-flex align-items-center gap-3">
-                                    <div class="text-nowrap small text-muted" style="width: 120px;">
-                                        {{ $clase->sesionBase?->hora_inicio?->format('H:i') }} - {{ $clase->sesionBase?->hora_fin?->format('H:i') }}
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold">{{ $clase->materia?->label }}</div>
-                                        <div class="small text-muted">
-                                            {{ $clase->profesor?->nombre_completo }} · {{ $clase->ubicacion }} · <span class="badge {{ $clase->tipoClase === 'PTC' ? 'bg-purple' : 'bg-info' }}">{{ $clase->tipoClase }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @endforeach
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="h6 mb-1">Horario semanal</h2>
+                        <span class="small text-muted">Distribución de clases por sesión y día</span>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary">{{ $sesionesHorario->count() }} sesiones</span>
+                </div>
+                <div class="card-body p-2 p-md-3">
+                    <div class="table-responsive horario-semanal-wrap">
+                        <table class="table horario-semanal-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="horario-hora-col">Sesión / hora</th>
+                                    @foreach ($diasSemana as $numeroDia => $nombreDia)
+                                        <th class="text-center {{ $numeroDia >= 6 ? 'horario-fin-semana' : '' }}">{{ $nombreDia }}</th>
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($sesionesHorario as $sesion)
+                                    @php
+                                        $sesionClase = $horarios->flatten(1)->firstWhere('sesion', $sesion);
+                                        $horaInicio = $sesionClase?->sesionBase?->hora_inicio?->format('H:i');
+                                        $horaFin = $sesionClase?->sesionBase?->hora_fin?->format('H:i');
+                                    @endphp
+                                    <tr>
+                                        <th class="horario-hora-cell">
+                                            <span class="fw-semibold">Ses. {{ $sesion }}</span>
+                                            <small>{{ $horaInicio }} - {{ $horaFin }}</small>
+                                        </th>
+                                        @foreach ($diasSemana as $numeroDia => $nombreDia)
+                                            <td class="{{ $numeroDia >= 6 ? 'horario-fin-semana' : '' }}">
+                                                @forelse ($horarioGrid->get($numeroDia . '-' . $sesion, collect()) as $clase)
+                                                    <div class="horario-clase">
+                                                        <div class="horario-materia">{{ $clase->materia?->nombre_asignatura ?? 'Materia no asignada' }}</div>
+                                                        <div class="horario-codigo">{{ $clase->clave_asignatura ?: 'Sin código' }}</div>
+                                                        <div class="horario-detalle">
+                                                            {{ $clase->profesor?->nombre_completo ?? 'Sin docente' }}
+                                                            <span>{{ $clase->ubicacion ?: 'Aula no asignada' }}</span>
+                                                        </div>
+                                                    </div>
+                                                @empty
+                                                    <span class="horario-vacio">—</span>
+                                                @endforelse
+                                            </td>
+                                        @endforeach
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         @endif
@@ -183,3 +220,28 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .horario-semanal-wrap { overflow-x: auto; }
+    .horario-semanal-table { min-width: 980px; --bs-table-bg: var(--surface-1); --bs-table-color: var(--text); --bs-table-border-color: var(--border); }
+    .horario-semanal-table th,
+    .horario-semanal-table td { border-color: var(--border); }
+    .horario-semanal-table thead th { background: var(--surface-2); color: var(--text-secondary); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: .75rem .65rem; }
+    .horario-hora-col { width: 125px; }
+    .horario-hora-cell { background: var(--surface-2); color: var(--text); padding: .75rem .65rem; vertical-align: top; }
+    .horario-hora-cell small { display: block; color: var(--text-secondary); font-weight: 400; margin-top: .25rem; white-space: nowrap; }
+    .horario-semanal-table td { width: 125px; min-width: 125px; height: 92px; padding: .45rem; vertical-align: top; }
+    .horario-clase { min-height: 76px; padding: .55rem; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-left: 3px solid var(--primary); border-radius: .5rem; background: color-mix(in srgb, var(--primary) 8%, var(--surface-1)); }
+    .horario-materia { color: var(--text); font-weight: 700; font-size: .78rem; line-height: 1.25; }
+    .horario-codigo { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: .68rem; margin-top: .2rem; }
+    .horario-detalle { color: var(--text-secondary); font-size: .68rem; line-height: 1.3; margin-top: .45rem; }
+    .horario-detalle span { display: block; color: var(--text-tertiary); margin-top: .15rem; }
+    .horario-vacio { color: var(--text-tertiary); display: block; text-align: center; padding-top: 1.4rem; }
+    .horario-fin-semana { background: color-mix(in srgb, var(--text) 3%, var(--surface-1)) !important; }
+    @media (max-width: 640px) {
+        .horario-semanal-table { min-width: 860px; }
+        .horario-semanal-table td { height: 84px; }
+    }
+</style>
+@endpush

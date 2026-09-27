@@ -38,7 +38,7 @@
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Identificador</th>
+                        <th>ID de puesto</th>
                         <th>Descripción</th>
                         <th>Área</th>
                         <th>Empleados</th>

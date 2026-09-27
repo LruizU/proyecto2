@@ -17,15 +17,15 @@
             @method('PUT')
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="identificador">Identificador</label>
-                    <input type="text" id="identificador" name="identificador" class="form-control" value="{{ old('identificador', $area->identificador) }}" required>
+                    <label class="form-label" for="identificador">ID de área</label>
+                    <input type="text" id="identificador" name="identificador" class="form-control" value="{{ old('identificador', $area->identificador) }}" maxlength="50" required>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="descripcion">Descripción</label>
                     <input type="text" id="descripcion" name="descripcion" class="form-control" value="{{ old('descripcion', $area->descripcion) }}">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label" for="empleado_responsable_id">Empleado responsable</label>
+                    <label class="form-label" for="empleado_responsable_id">Encargado</label>
                     <select id="empleado_responsable_id" name="empleado_responsable_id" class="form-select">
                         <option value="">Sin responsable</option>
                         @foreach ($empleados as $empleado)

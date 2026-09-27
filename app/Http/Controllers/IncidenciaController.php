@@ -26,7 +26,7 @@ class IncidenciaController extends Controller
         $user = $request->user();
 
         $incidencias = Incidencia::query()
-            ->with(['empleado', 'profesor', 'area', 'puesto', 'director', 'responsableArea'])
+            ->with(['empleado', 'profesor', 'area', 'puesto', 'director', 'responsableArea', 'approvals'])
             ->when(! $user->isAdmin(), function ($query) use ($user): void {
                 $employeeIds = $user->employeeAssignments()->pluck('employees.id');
                 $professorKeys = $user->professorAssignments()->pluck('profesores.clave_profesor');
@@ -39,6 +39,11 @@ class IncidenciaController extends Controller
                         ->orWhereIn('director_id', $employeeIds)
                         ->orWhere('created_by_user_id', $user->id);
                 });
+            })
+            ->when($user->isAdmin(), function ($query): void {
+                $query->whereDoesntHave('approvals', fn ($approvalQuery) => $approvalQuery
+                        ->where('status', 'pending')
+                        ->whereNotNull('approver_employee_id'));
             })
             ->when($estado, fn ($query) => $query->where('estado', $estado))
             ->when($q !== '', function ($query) use ($q) {
@@ -151,6 +156,38 @@ class IncidenciaController extends Controller
         return redirect()->route('incidencias.index')->with('success', 'Incidencia registrada correctamente.');
     }
 
+    public function formato(Incidencia $incidencia): View
+    {
+        $user = request()->user();
+        $pendingApproval = $incidencia->approvals()
+            ->where('status', 'pending')
+            ->orderBy('sequence')
+            ->first();
+        if ($user->isAdmin() && $pendingApproval?->approver_employee_id !== null) {
+            abort(403, 'La incidencia aún requiere la firma del jefe directo.');
+        }
+
+        $canView = $user->isAdmin()
+            || $incidencia->created_by_user_id === $user->id
+            || $user->employeeAssignments()->whereKey($incidencia->empleado_id)->exists()
+            || $user->professorAssignments()->whereKey($incidencia->profesor_clave)->exists()
+            || $user->employeeAssignments()->whereKey($incidencia->responsable_area_id)->exists()
+            || $user->employeeAssignments()->whereKey($incidencia->director_id)->exists();
+
+        abort_unless($canView, 403);
+
+        $incidencia->load(['empleado.area', 'empleado.puesto', 'profesor.area', 'profesor.puesto', 'area', 'puesto', 'director', 'responsableArea', 'creador', 'approvals.approverUser', 'approvals.approverEmployee']);
+
+        $nombre = $incidencia->empleado?->name
+            ?? trim("{$incidencia->profesor?->paterno} {$incidencia->profesor?->materno} {$incidencia->profesor?->nombre_profesor}");
+        $numero = $incidencia->numero_empleado
+            ?? $incidencia->empleado?->numero_empleado
+            ?? $incidencia->empleado?->user_id
+            ?? $incidencia->profesor?->clave_profesor;
+
+        return view('incidencias.formato', compact('incidencia', 'nombre', 'numero'));
+    }
+
     public function updateStatus(Request $request, Incidencia $incidencia): RedirectResponse
     {
         $this->authorize('approve', $incidencia);
@@ -172,14 +209,25 @@ class IncidenciaController extends Controller
                 'approved_at' => $data['estado'] === 'aprobada' ? now() : null,
                 'rejected_at' => $data['estado'] === 'rechazada' ? now() : null,
                 'approver_user_id' => auth()->id(),
-                'approver_employee_id' => auth()->user()?->employee?->id,
+                'approver_employee_id' => $pendingApproval->approver_employee_id,
             ]);
         }
 
+        $isRejected = $data['estado'] === 'rechazada';
+        if (! $isRejected && $pendingApproval && $pendingApproval->approver_employee_id !== null
+            && $incidencia->approvals()->where('status', 'pending')->doesntExist()) {
+            // Las incidencias antiguas pueden no tener aún el paso institucional.
+            IncidenciaApproval::create([
+                'incidencia_id' => $incidencia->id,
+                'sequence' => ((int) $incidencia->approvals()->max('sequence')) + 1,
+                'status' => 'pending',
+            ]);
+        }
+        $hasPendingSteps = $incidencia->approvals()->where('status', 'pending')->exists();
         $incidencia->update([
-            'estado' => $data['estado'],
-            'autorizado_por_user_id' => auth()->id(),
-            'autorizado_at' => now(),
+            'estado' => $isRejected ? 'rechazada' : ($hasPendingSteps ? 'pendiente' : 'aprobada'),
+            'autorizado_por_user_id' => ! $isRejected && ! $hasPendingSteps ? auth()->id() : $incidencia->autorizado_por_user_id,
+            'autorizado_at' => ! $isRejected && ! $hasPendingSteps ? now() : $incidencia->autorizado_at,
         ]);
 
         app(AuditService::class)->log(
@@ -187,7 +235,7 @@ class IncidenciaController extends Controller
             'status_changed',
             $incidencia,
             'incidencias',
-            "Cambio de estado de incidencia: {$oldState} -> {$data['estado']}",
+            "Avance de aprobación de incidencia: {$oldState} -> ".$incidencia->estado,
             ['estado' => $oldState],
             ['estado' => $data['estado']]
         );
@@ -196,8 +244,10 @@ class IncidenciaController extends Controller
         if ($incidencia->creador) {
             $incidencia->creador->notify(new IncidenciaStatusNotification(
                 $incidencia,
-                $data['estado'],
-                "Tu incidencia '{$incidencia->asunto}' fue {$data['estado']}.",
+                $incidencia->estado,
+                $incidencia->estado === 'aprobada'
+                    ? "Tu incidencia '{$incidencia->asunto}' fue autorizada por el rector."
+                    : ($isRejected ? "Tu incidencia '{$incidencia->asunto}' fue rechazada." : "Tu incidencia '{$incidencia->asunto}' avanzó a la siguiente autorización."),
             ));
         }
 

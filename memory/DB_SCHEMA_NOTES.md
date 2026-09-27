@@ -26,6 +26,9 @@ Mapa de entidades y relaciones clave no obvias en la base de datos (MySQL princi
   - Cada ejecución de sincronización crea una cabecera en `firebird_syncs` y el desglose de cada registro en `firebird_sync_items`.
   - Clasifica las operaciones como `INSERT`, `UPDATE`, `UNCHANGED` o `ERROR`.
   - Firebird es tratado como solo lectura: la sincronización nunca escribe en Firebird. Estrategias en `app/Services/SyncStrategies/` (`FullSync`, `CatalogSmartSync`, `CycleDirectSync`, `CustomSync`).
+  - En `CycleDirectSync`, `ALUMNOS` se sincroniza primero usando los IDs obtenidos de `ALUMNOS_GRUPOS`; después se sincronizan `ALUMNOS_NIVELES` y `ALUMNOS_GRUPOS`. Esta última tabla materializa `INICIAL`, `FINAL` y `PERIODO` a partir de los grupos del ciclo porque el flujo requiere una clave compuesta local.
+  - `alumnos_niveles` conserva el nivel/grado del alumno por ciclo; `alumnos_grupos` conserva la inscripción concreta a un grupo por ciclo. La carrera no se deriva de `alumnos_niveles`: cuando existe, debe provenir de los datos del alumno/grupo o del catálogo de planes.
+  - `FullSyncStrategy` tenía un fallo en el post-proceso: pasaba `$mysql` sin inicializar a `propagateOrigenHorario`; ahora obtiene explícitamente la conexión PDO antes de ejecutar ese paso.
 
 ## Catálogo Espejo Académico (UTE)
 - **Tablas:** `ciclos`, `niveles`, `sedes`, `turnos`, `planes`, `materias`, `profesores`, `alumnos`, `grupos`, `cursos`, `cursos_det`, `horarios_det`.

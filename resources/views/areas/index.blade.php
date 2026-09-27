@@ -20,9 +20,9 @@
             <table class="table table-hover align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Identificador</th>
+                        <th>ID de área</th>
                         <th>Descripción</th>
-                        <th>Empleado responsable</th>
+                        <th>Encargado</th>
                         <th>Puestos</th>
                         <th class="text-end">Acciones</th>
                     </tr>

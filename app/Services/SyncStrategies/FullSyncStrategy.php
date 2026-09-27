@@ -57,7 +57,7 @@ class FullSyncStrategy implements SyncStrategyInterface
         // Post-sync: poblar horarios_det.origen_horario desde profesores.origen_horario
         // Clave del clasificador PTC/PA: ORIGEN_HORARIO = 'HD' → PTC, resto → PA
         $log[] = ['tipo' => 'info', 'msg' => '--- Post-sync: propagando origen_horario a horarios_det ---'];
-        $postResult = $this->propagateOrigenHorario($mysql, $ciclo);
+        $postResult = $this->propagateOrigenHorario(DB::connection()->getPdo(), $ciclo);
         $log = array_merge($log, $postResult['log']);
         $errors = array_merge($errors, $postResult['errors']);
 

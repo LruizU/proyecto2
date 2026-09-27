@@ -4,6 +4,7 @@
 @section('breadcrumb', 'Academia › Dashboard')
 
 @section('content')
+<div class="academia-dashboard">
 {{-- ========== CICLO HEADER — Selector Institucional + Contexto ========== --}}
 <section aria-labelledby="ciclo-heading" class="card shadow-sm border mb-4 dashboard-header-card">
   <div class="card-body p-3 p-md-4">
@@ -996,7 +997,7 @@
 
     {{-- Tabla 3: Cursos y Programación por Profesor (Ancho Completo) --}}
     <div class="col-12">
-      <div class="card shadow-sm border dashboard-table-card">
+          <div class="card shadow-sm border dashboard-table-card">
         <div class="card-header bg-surface-1 border-bottom p-3">
           <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
             <div>
@@ -1118,181 +1119,132 @@
 </section>
 
 {{-- ========== CARGA ACADÉMICA POR MAESTRO ========== --}}
+@php
+  $cargaBloques = $cargaPorMaestro->flatMap(fn ($maestro) => $maestro->blocks)
+    ->map(fn ($block) => $block->sede_id . '|' . $block->turno . '|' . $block->sede)
+    ->unique()
+    ->sort()
+    ->values();
+  $cargaBloquesPorSede = $cargaBloques->groupBy(function ($blockLabel) {
+    [, , $sede] = explode('|', $blockLabel, 3);
+    return $sede;
+  });
+@endphp
 <section aria-labelledby="carga-maestro-heading" class="mb-4">
   <div class="section-heading mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
     <div>
       <h2 id="carga-maestro-heading" class="h6 fw-bold mb-0">Carga Académica Total por Maestro</h2>
-      <span class="small text-secondary">Detalle de horas clase, materia y cursos por docente</span>
+      <span class="small text-secondary">Horas de grupo y horas de estadía por sede y turno</span>
     </div>
     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Ciclo {{ $ciclo->label }}</span>
   </div>
 
   <div class="card shadow-sm border dashboard-table-card">
+    <div class="print-report-meta" hidden>
+      <strong>Carga Académica Total por Maestro</strong>
+      <span>Ciclo {{ $ciclo->label }} · Generado {{ now()->format('d/m/Y H:i') }}</span>
+    </div>
     <div class="card-header bg-surface-1 border-bottom p-3">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-        <div class="d-flex align-items-center gap-2">
-          <div class="p-2 rounded d-inline-flex" style="background:rgba(59,130,246,0.12);color:var(--cat-blue)">
-            <i class="bi bi-person-workspace fs-5"></i>
-          </div>
-          <div>
-            <h3 class="h6 fw-bold mb-0">Distribución de Carga Horaria Docente</h3>
-            <span class="small text-secondary">Horas de clase, materia y cursos por profesor</span>
-          </div>
-        </div>
-        <span class="badge bg-surface-2 text-secondary border px-2 py-1 js-table-count-badge">
-          {{ number_format($cargaPorMaestro->count()) }} maestros
-        </span>
-      </div>
-
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
-        <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 200px;">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-surface-2 border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control form-control-sm border-start-0 js-table-search" data-table-id="carga-maestro-table" placeholder="Buscar maestro, nivel, turno o sede..." aria-label="Buscar maestro">
-          </div>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-          <div class="d-flex align-items-center gap-1">
-            <label class="small text-muted mb-0 me-1 d-none d-sm-inline">Ver:</label>
-            <select class="form-select form-select-sm js-table-size" data-table-id="carga-maestro-table" style="width: 70px;" aria-label="Cantidad de filas">
-              <option value="20" selected>20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
-            </select>
-          </div>
-
-          <div class="btn-group btn-group-sm">
-            <button type="button" class="btn btn-outline-success js-export-excel" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}" title="Exportar a Excel">
-              <i class="bi bi-file-earmark-excel me-1"></i>Excel
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span class="small text-secondary">Puede combinar filtros por docente, tipo, sede, turno o cualquier bloque de horas.</span>
+        <div class="d-flex gap-2">
+          <input type="search" class="form-control form-control-sm js-table-search" data-table-id="carga-maestro-table" placeholder="Buscar en la tabla..." aria-label="Buscar en carga académica">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle align-self-center d-none js-active-filters" data-table-id="carga-maestro-table" aria-live="polite"></span>
+          <button type="button" class="btn btn-sm btn-outline-secondary js-clear-column-filters" data-table-id="carga-maestro-table">Limpiar</button>
+          <div class="dropdown">
+            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-download me-1"></i>Exportar
             </button>
-            <button type="button" class="btn btn-outline-primary js-export-csv" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}" title="Exportar a CSV">
-              <i class="bi bi-file-earmark-text me-1"></i>CSV
-            </button>
-            <button type="button" class="btn btn-outline-danger js-export-pdf" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}" title="Imprimir / PDF">
-              <i class="bi bi-file-earmark-pdf me-1"></i>PDF
-            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><button type="button" class="dropdown-item js-export-excel" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}"><i class="bi bi-file-earmark-excel text-success me-2"></i>Excel</button></li>
+              <li><button type="button" class="dropdown-item js-export-csv" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}"><i class="bi bi-file-earmark-text text-primary me-2"></i>CSV</button></li>
+              <li><button type="button" class="dropdown-item js-export-pdf" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF / imprimir</button></li>
+            </ul>
           </div>
         </div>
       </div>
     </div>
-
-    <div class="table-responsive" style="min-height: 300px; max-height: 500px;">
-      <table id="carga-maestro-table" class="table table-hover table-sm align-middle mb-0 dashboard-data-table">
+    <div class="table-responsive" style="min-height: 300px; max-height: 620px;">
+      <table id="carga-maestro-table" class="table table-bordered table-hover table-sm align-middle mb-0 dashboard-data-table carga-academica-table">
         <thead class="table-light sticky-top">
           <tr>
-            <th scope="col" class="sortable text-nowrap" data-sort="string" style="cursor:pointer; width: 200px;" title="Ordenar por maestro">
-              Maestro <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 140px;" title="Ordenar por carrera">
-              Carrera <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 90px;" title="Ordenar por nivel">
-              Nivel <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 110px;" title="Ordenar por turno">
-              Turno <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable" data-sort="string" style="cursor:pointer; width: 160px;" title="Ordenar por sede">
-              Sede <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 110px;" title="Horas de clase (horarios_det)">
-              Hrs Clase <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 110px;" title="Horas materia (HT+HP)">
-              Hrs Materia <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 110px;" title="Horas cursos (sesiones)">
-              Hrs Cursos <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 100px;" title="Total horas">
-              Total <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
-            </th>
-            <th scope="col" class="text-center" style="width: 80px;">Tipo</th>
+            <th rowspan="3" class="sortable text-nowrap" data-sort="string">Docente</th>
+            <th rowspan="3" class="sortable text-center" data-sort="string">Tipo</th>
+            @foreach($cargaBloquesPorSede as $blockSede => $blocksForSede)
+              <th colspan="{{ $blocksForSede->count() * 2 }}" class="text-center carga-block-header carga-block-col">{{ $blockSede }}</th>
+            @endforeach
+            <th rowspan="3" class="sortable text-end" data-sort="number" data-sort-column="{{ 2 + ($cargaBloques->count() * 2) }}">Total horas clase frente a grupo por semana</th>
+            <th rowspan="3" class="sortable text-end" data-sort="number" data-sort-column="{{ 3 + ($cargaBloques->count() * 2) }}">Total RH</th>
+            <th rowspan="3" class="sortable text-center" data-sort-column="{{ 4 + ($cargaBloques->count() * 2) }}">Otro turno</th>
+            <th rowspan="3" class="sortable" data-sort-column="{{ 5 + ($cargaBloques->count() * 2) }}">Observaciones</th>
+          </tr>
+          <tr>
+            @foreach($cargaBloques as $blockLabel)
+              @php [, $blockTurno] = explode('|', $blockLabel, 3); @endphp
+              <th colspan="2" class="text-center carga-block-col">{{ $blockTurno }}</th>
+            @endforeach
+          </tr>
+          <tr>
+            @foreach($cargaBloques as $blockLabel)
+              <th class="text-end carga-block-col">Horas Grupo</th>
+              <th class="text-end carga-block-col">Horas Estadía</th>
+            @endforeach
+          </tr>
+          <tr class="column-filters">
+            <th><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="0" placeholder="Docente" aria-label="Filtrar docente"></th>
+            <th><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="1" placeholder="Tipo" aria-label="Filtrar tipo"></th>
+            @foreach($cargaBloques as $index => $blockLabel)
+              <th class="carga-block-col"><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="{{ 2 + ($index * 2) }}" placeholder="Grupo" aria-label="Filtrar horas grupo"></th>
+              <th class="carga-block-col"><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="{{ 3 + ($index * 2) }}" placeholder="Estadía" aria-label="Filtrar horas estadía"></th>
+            @endforeach
+            <th><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="{{ 2 + ($cargaBloques->count() * 2) }}" placeholder="Total" aria-label="Filtrar total clase"></th>
+            <th><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="{{ 3 + ($cargaBloques->count() * 2) }}" placeholder="RH" aria-label="Filtrar total RH"></th>
+            <th><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="{{ 4 + ($cargaBloques->count() * 2) }}" placeholder="Turno" aria-label="Filtrar otro turno"></th>
+            <th><input type="search" class="form-control form-control-sm js-column-filter" data-filter-column="{{ 5 + ($cargaBloques->count() * 2) }}" placeholder="Notas" aria-label="Filtrar observaciones"></th>
           </tr>
         </thead>
         <tbody>
           @forelse($cargaPorMaestro as $maestro)
             @php
               $originLabel = match($maestro->origen) { 'HD' => 'PTC', 'CA' => 'PA', default => 'N/D' };
-              $originBadge = match($maestro->origen) {
-                'HD' => 'bg-success-subtle text-success border border-success-subtle',
-                'CA' => 'bg-info-subtle text-info border border-info-subtle',
-                default => 'bg-secondary-subtle text-secondary border'
-              };
+              $originBadge = $maestro->origen === 'HD' ? 'bg-success-subtle text-success' : 'bg-info-subtle text-info';
+              $blocks = $maestro->blocks->keyBy(fn ($block) => $block->sede_id . '|' . $block->turno . '|' . $block->sede);
             @endphp
             <tr>
               <td>
-                <div class="fw-semibold text-truncate" style="max-width: 200px;" title="{{ $maestro->nombre }}">
-                  {{ $maestro->nombre }}
-                </div>
-                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">
-                  {{ $maestro->clave_profesor }}
-                </span>
+                <div class="fw-semibold">{{ $maestro->nombre }}</div>
+                <small class="text-muted font-monospace">{{ $maestro->clave_profesor }}</small>
+                @if($maestro->carreras)<small class="d-block text-muted" title="Carrera">{{ $maestro->carreras }}</small>@endif
+                @if($maestro->niveles)<small class="d-block text-muted" title="Niveles">Nivel: {{ $maestro->niveles }}</small>@endif
               </td>
-              <td class="text-center">
-                <span class="badge bg-purple-subtle text-purple border border-purple-subtle" style="background:rgba(147,51,234,0.12);color:var(--cat-purple)">
-                  {{ $maestro->carrera }}
-                </span>
-              </td>
-              <td class="text-center">
-                <span class="badge bg-light text-secondary border font-monospace">{{ $maestro->nivel }}</span>
-              </td>
-              <td class="text-center">
-                <span class="badge {{ str_starts_with($maestro->turno, 'M') ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle' }}">
-                  {{ $maestro->turno }}
-                </span>
-              </td>
-              <td>
-                <div class="small text-truncate" style="max-width: 160px;" title="{{ $maestro->sede }}">
-                  <i class="bi bi-geo-alt text-muted me-1"></i>{{ $maestro->sede }}
-                </div>
-              </td>
-              <td class="text-end fw-semibold mono" style="font-family:'JetBrains Mono',monospace">
-                {{ number_format($maestro->horas_clase) }}
-              </td>
-              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">
-                {{ number_format($maestro->horas_materia) }}
-              </td>
-              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">
-                {{ number_format($maestro->horas_cursos) }}
-              </td>
-              <td class="text-end fw-bold mono" style="font-family:'JetBrains Mono',monospace; color:var(--primary)">
-                {{ number_format($maestro->total_horas) }}
-              </td>
-              <td class="text-center">
-                <span class="badge {{ $originBadge }}">{{ $originLabel }}</span>
-              </td>
+              <td class="text-center"><span class="badge {{ $originBadge }}">{{ $originLabel }}</span></td>
+              @foreach($cargaBloques as $blockLabel)
+                @php $block = $blocks->get($blockLabel); @endphp
+                <td class="text-end mono carga-block-col" data-total-role="grupo" data-value="{{ $block?->horas_grupo ?? 0 }}">{{ number_format($block?->horas_grupo ?? 0) }}</td>
+                <td class="text-end mono carga-block-col" data-total-role="estadia" data-value="{{ $block?->horas_estadia ?? 0 }}">{{ number_format($block?->horas_estadia ?? 0) }}</td>
+              @endforeach
+              <td class="text-end fw-bold mono" data-total-role="clase" data-value="{{ $maestro->horas_grupo }}">{{ number_format($maestro->horas_grupo) }}</td>
+              <td class="text-end fw-bold mono" data-total-role="rh" data-value="{{ $maestro->total_rh }}">{{ number_format($maestro->total_rh) }}</td>
+              <td class="text-center">{{ $maestro->otro_turno }}</td>
+              <td>{{ $maestro->observaciones }}</td>
             </tr>
           @empty
-            <tr>
-              <td colspan="10" class="text-center py-5 text-secondary">
-                <i class="bi bi-person-workspace fs-3 d-block mb-2 text-muted"></i>
-                <div>Sin carga académica registrada para este ciclo</div>
-                <div class="small text-muted mt-1">Los maestros con horarios asignados aparecerán aquí.</div>
-              </td>
-            </tr>
+            <tr><td colspan="{{ 6 + ($cargaBloques->count() * 2) }}" class="text-center py-5 text-secondary">Sin carga académica registrada para este ciclo.</td></tr>
           @endforelse
         </tbody>
-        @if($cargaPorMaestro->isNotEmpty())
-          <tfoot class="table-light border-top">
-            <tr class="fw-bold">
-              <td colspan="5">Totales</td>
-              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($cargaPorMaestro->sum('horas_clase')) }}</td>
-              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($cargaPorMaestro->sum('horas_materia')) }}</td>
-              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($cargaPorMaestro->sum('horas_cursos')) }}</td>
-              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace; color:var(--primary)">{{ number_format($cargaPorMaestro->sum('total_horas')) }}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        @endif
+        <tfoot class="table-light border-top">
+          <tr class="fw-bold">
+            <td colspan="2">Totales filtrados</td>
+            @foreach($cargaBloques as $blockLabel)
+              <td class="text-end mono js-total-grupo carga-block-col">0</td><td class="text-end mono js-total-estadia carga-block-col">0</td>
+            @endforeach
+            <td class="text-end mono js-total-clase">0</td><td class="text-end mono js-total-rh">0</td><td></td><td></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
-
     <div class="card-footer bg-surface-1 border-top py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <div class="small text-secondary js-table-info" data-table-id="carga-maestro-table">
-        Mostrando 1 a 20 de {{ number_format($cargaPorMaestro->count()) }} maestros
-      </div>
+      <div class="small text-secondary js-table-info" data-table-id="carga-maestro-table"></div>
       <div class="js-table-pagination" data-table-id="carga-maestro-table"></div>
     </div>
   </div>
@@ -1363,28 +1315,106 @@
   </div>
 </section>
 
+</div>
 @endsection
 
 {{-- ========== ESTILOS PROFESIONALES ========== --}}
 @push('styles')
 <style>
-  /* Header Card Styling */
-  .dashboard-header-card {
-    border-left: 5px solid var(--primary) !important;
-    background: var(--surface-1);
+  .academia-dashboard {
+    --dashboard-card: var(--surface-1, var(--surface));
+    --dashboard-card-soft: var(--surface-2, var(--surface-elevated));
+    --dashboard-line: var(--border);
+    --dashboard-muted: var(--text-secondary);
+    --dashboard-accent: var(--primary);
   }
 
-  /* Table Design System */
+  .academia-dashboard .card {
+    border-color: var(--dashboard-line) !important;
+    background: var(--dashboard-card);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .06) !important;
+  }
+  html[data-theme="dark"] .academia-dashboard .card {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .18) !important;
+  }
+  .academia-dashboard .card-header,
+  .academia-dashboard .card-footer {
+    border-color: var(--dashboard-line) !important;
+  }
+
+  .dashboard-header-card {
+    border-left: 5px solid var(--primary) !important;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--primary) 8%, transparent), transparent 42%),
+      var(--dashboard-card);
+  }
+  .academia-dashboard h1,
+  .academia-dashboard h2,
+  .academia-dashboard h3 {
+    color: var(--text);
+    letter-spacing: -.015em;
+  }
+  .academia-dashboard .section-heading {
+    padding: .25rem .15rem;
+  }
+  .academia-dashboard .section-heading h2::before {
+    content: "";
+    display: inline-block;
+    width: 4px;
+    height: 1.1rem;
+    margin-right: .55rem;
+    vertical-align: -.15rem;
+    border-radius: 999px;
+    background: var(--dashboard-accent);
+  }
+  .academia-dashboard .text-secondary,
+  .academia-dashboard .text-muted {
+    color: var(--dashboard-muted) !important;
+  }
+  .academia-dashboard .badge.bg-light {
+    color: var(--text-secondary) !important;
+    background: var(--dashboard-card-soft) !important;
+    border-color: var(--dashboard-line) !important;
+  }
+  .academia-dashboard .form-control,
+  .academia-dashboard .form-select,
+  .academia-dashboard .input-group-text {
+    color: var(--text);
+    background-color: var(--dashboard-card);
+    border-color: var(--dashboard-line);
+  }
+  .academia-dashboard .form-control::placeholder {
+    color: var(--text-tertiary);
+  }
+  .academia-dashboard .form-control:focus,
+  .academia-dashboard .form-select:focus {
+    color: var(--text);
+    background-color: var(--dashboard-card);
+    border-color: var(--dashboard-accent);
+    box-shadow: 0 0 0 .2rem var(--primary-ring);
+  }
+  .academia-dashboard .btn-outline-secondary {
+    --bs-btn-color: var(--text-secondary);
+    --bs-btn-border-color: var(--dashboard-line);
+    --bs-btn-hover-color: var(--text);
+    --bs-btn-hover-bg: var(--dashboard-card-soft);
+    --bs-btn-hover-border-color: var(--border-strong);
+  }
+
   .dashboard-table-card {
-    background: var(--surface-1);
     border-radius: var(--radius-md, 8px);
     overflow: hidden;
   }
   .dashboard-table-card .card-header {
-    background: var(--surface-1);
+    background: var(--dashboard-card) !important;
   }
   .dashboard-data-table {
     font-size: 13px;
+    --bs-table-bg: var(--dashboard-card);
+    --bs-table-striped-bg: var(--dashboard-card-soft);
+    --bs-table-hover-bg: color-mix(in srgb, var(--dashboard-accent) 8%, var(--dashboard-card));
+    --bs-table-color: var(--text);
+    --bs-table-border-color: var(--dashboard-line);
   }
   .dashboard-data-table th {
     font-size: 11px;
@@ -1392,9 +1422,10 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-secondary);
-    background-color: var(--surface-2) !important;
+    background-color: var(--dashboard-card-soft) !important;
     border-bottom: 2px solid var(--border);
     padding: 8px 12px;
+    white-space: nowrap;
   }
   .dashboard-data-table td {
     padding: 8px 12px;
@@ -1402,7 +1433,7 @@
     border-bottom: 1px solid var(--border);
   }
   .dashboard-data-table tbody tr:hover {
-    background-color: color-mix(in srgb, var(--primary) 4%, transparent) !important;
+    background-color: var(--bs-table-hover-bg) !important;
   }
   .dashboard-data-table th.sortable:hover {
     color: var(--primary);
@@ -1412,10 +1443,63 @@
     color: var(--primary);
     background-color: color-mix(in srgb, var(--primary) 8%, var(--surface-2)) !important;
   }
+  .dashboard-data-table .column-filters th {
+    padding: 4px 8px;
+    background: var(--dashboard-card) !important;
+  }
+  .dashboard-data-table .column-filters input {
+    min-width: 58px;
+    font-size: 11px;
+  }
+  .carga-academica-table {
+    min-width: 1120px;
+  }
+  .carga-academica-table thead tr:first-child th {
+    background: var(--primary) !important;
+    color: #fff !important;
+    border-color: color-mix(in srgb, var(--primary) 70%, #000) !important;
+  }
+  .carga-academica-table thead tr:nth-child(2) th {
+    color: var(--text);
+    background: color-mix(in srgb, var(--dashboard-accent) 12%, var(--dashboard-card-soft)) !important;
+  }
+  .carga-academica-table thead tr:nth-child(3) th {
+    color: var(--text-secondary);
+    background: var(--dashboard-card-soft) !important;
+  }
+  .carga-academica-table .column-filters th {
+    position: sticky;
+    top: 91px;
+    z-index: 3;
+  }
+  .carga-academica-table tbody td {
+    vertical-align: middle;
+  }
+  .carga-academica-table tbody td[data-total-role="grupo"],
+  .carga-academica-table tbody td[data-total-role="estadia"] {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .carga-academica-table tbody td[data-total-role="clase"] {
+    color: var(--cat-blue);
+  }
+  .carga-academica-table tbody td[data-total-role="rh"] {
+    color: var(--cat-green);
+  }
+  html[data-theme="dark"] .carga-academica-table tbody td[data-total-role="clase"] {
+    color: #93c5fd;
+  }
+  html[data-theme="dark"] .carga-academica-table tbody td[data-total-role="rh"] {
+    color: #6ee7b7;
+  }
+  .academia-dashboard .table-responsive {
+    scrollbar-color: var(--scrollbar) transparent;
+  }
 
-  /* KPI Cards */
   .kpi-card {
     transition: transform .15s ease, box-shadow .15s ease;
+    position: relative;
+    overflow: hidden;
   }
   .kpi-card:hover {
     transform: translateY(-2px);
@@ -1425,7 +1509,6 @@
     box-shadow: 0 6px 24px rgba(0,0,0,0.3) !important;
   }
 
-  /* Flash animation on KPI AJAX update */
   .kpi-flash {
     animation: kpiFlashAnim .8s ease-out 1;
   }
@@ -1434,7 +1517,6 @@
     100% { transform: scale(1); }
   }
 
-  /* Interactive SVG Chart */
   .trend-chart .area-dot {
     transition: r .2s, fill .2s;
     cursor: pointer;
@@ -1444,12 +1526,10 @@
     fill: var(--primary);
   }
 
-  /* Quick links hover */
   .hover-primary:hover {
     color: var(--primary) !important;
   }
 
-  /* Print Stylesheet for PDF Export */
   @media print {
     body * { visibility: hidden; }
     .print-active-area, .print-active-area * { visibility: visible; }
@@ -1485,6 +1565,8 @@
     const paginationContainer = document.querySelector(`.js-table-pagination[data-table-id="${tableId}"]`);
     const infoContainer = document.querySelector(`.js-table-info[data-table-id="${tableId}"]`);
     const countBadge = document.querySelector(`.dashboard-table-card:has(#${tableId}) .js-table-count-badge`);
+    const columnFilters = Array.from(table.querySelectorAll('.js-column-filter'));
+    const activeFiltersBadge = document.querySelector(`.js-active-filters[data-table-id="${tableId}"]`);
 
     let filteredRows = [...originalRows];
     let currentPage = 1;
@@ -1505,7 +1587,7 @@
       tbody.innerHTML = '';
 
       if (totalFiltered === 0) {
-        const colCount = table.querySelectorAll('thead th').length || 5;
+        const colCount = table.querySelectorAll('thead tr:first-child th').length || 5;
         const emptyRow = document.createElement('tr');
         emptyRow.className = 'empty-search-row';
         emptyRow.innerHTML = `<td colspan="${colCount}" class="text-center py-4 text-secondary">
@@ -1515,6 +1597,8 @@
         </td>`;
         emptyRow.querySelector('.js-clear-search').onclick = function() {
           if (searchInput) { searchInput.value = ''; searchInput.dispatchEvent(new Event('input')); }
+          columnFilters.forEach(function(input) { input.value = ''; });
+          applyFilters();
         };
         tbody.appendChild(emptyRow);
       } else {
@@ -1538,8 +1622,61 @@
         countBadge.textContent = `${totalFiltered} registros`;
       }
 
+      updateTotals();
+
       // Renderizar paginador
       renderPagination(totalPages);
+    }
+
+    function updateTotals() {
+      if (tableId !== 'carga-maestro-table') return;
+
+      const totals = {};
+      filteredRows.forEach(function(row) {
+        Array.from(row.cells).forEach(function(cell, columnIndex) {
+          if (cell.dataset.totalRole) {
+            totals[columnIndex] = (totals[columnIndex] || 0) + Number(cell.dataset.value || 0);
+          }
+        });
+      });
+
+      const footerCells = table.tFoot?.rows[0]?.cells || [];
+      const blockCount = Math.max(0, (footerCells.length - 5) / 2);
+      let footerIndex = 1;
+      for (let block = 0; block < blockCount; block++) {
+        footerCells[footerIndex++].textContent = (totals[2 + (block * 2)] || 0).toLocaleString('es-MX');
+        footerCells[footerIndex++].textContent = (totals[3 + (block * 2)] || 0).toLocaleString('es-MX');
+      }
+      const classColumn = 2 + (blockCount * 2);
+      footerCells[footerIndex++].textContent = (totals[classColumn] || 0).toLocaleString('es-MX');
+      footerCells[footerIndex++].textContent = (totals[classColumn + 1] || 0).toLocaleString('es-MX');
+    }
+
+    function applyFilters() {
+      const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+      const activeColumnFilters = columnFilters
+        .map(function(input) {
+          return {
+            column: Number(input.dataset.filterColumn),
+            value: input.value.toLowerCase().trim(),
+          };
+        })
+        .filter(function(filter) { return filter.value !== ''; });
+
+      filteredRows = originalRows.filter(function(row) {
+        const matchesGlobal = !query || row.innerText.toLowerCase().includes(query);
+        const matchesColumns = activeColumnFilters.every(function(filter) {
+          return (row.cells[filter.column]?.innerText || '').toLowerCase().includes(filter.value);
+        });
+        return matchesGlobal && matchesColumns;
+      });
+      if (activeFiltersBadge) {
+        const activeCount = activeColumnFilters.length + (query ? 1 : 0);
+        activeFiltersBadge.textContent = activeCount ? `${activeCount} filtro${activeCount === 1 ? '' : 's'} activo${activeCount === 1 ? '' : 's'}` : '';
+        activeFiltersBadge.classList.toggle('d-none', activeCount === 0);
+      }
+      currentPage = 1;
+      render();
     }
 
     function renderPagination(totalPages) {
@@ -1600,18 +1737,14 @@
     // Evento de búsqueda instantánea
     if (searchInput) {
       searchInput.addEventListener('input', function() {
-        const query = searchInput.value.toLowerCase().trim();
-        if (!query) {
-          filteredRows = [...originalRows];
-        } else {
-          filteredRows = originalRows.filter(function(row) {
-            return row.innerText.toLowerCase().includes(query);
-          });
-        }
-        currentPage = 1;
-        render();
+        applyFilters();
       });
     }
+
+    columnFilters.forEach(function(input) {
+      input.addEventListener('input', applyFilters);
+      input.addEventListener('click', function(event) { event.stopPropagation(); });
+    });
 
     // Selector de tamaño de página
     if (sizeSelect) {
@@ -1623,8 +1756,9 @@
     }
 
     // Ordenamiento por encabezados
-    table.querySelectorAll('thead th.sortable').forEach(function(th, index) {
+    table.querySelectorAll('thead th.sortable').forEach(function(th) {
       th.addEventListener('click', function() {
+        const index = Number(th.dataset.sortColumn ?? th.cellIndex);
         const type = th.getAttribute('data-sort') || 'string';
         if (sortColumnIndex === index) {
           sortDirection = -sortDirection;
@@ -1673,6 +1807,21 @@
     const tableIds = ['materias-dashboard-table', 'planes-dashboard-table', 'students-breakdown-table', 'courses-origin-table', 'carga-maestro-table'];
     tableIds.forEach(function(id) {
       AcademiaTableEngine(id);
+    });
+
+    document.querySelectorAll('.js-clear-column-filters').forEach(function(button) {
+      button.addEventListener('click', function() {
+        const tableId = button.dataset.tableId;
+        document.querySelectorAll(`.js-column-filter[data-table-id="${tableId}"], #${tableId} .js-column-filter`).forEach(function(input) {
+          input.value = '';
+          input.dispatchEvent(new Event('input'));
+        });
+        const search = document.querySelector(`.js-table-search[data-table-id="${tableId}"]`);
+        if (search) {
+          search.value = '';
+          search.dispatchEvent(new Event('input'));
+        }
+      });
     });
 
     // ── Exportación a CSV con UTF-8 BOM (Soporta acentos para Excel) ──

@@ -237,6 +237,7 @@ Route::middleware('auth')->group(function () {
     // Preferencia - Crear usuarios con preferencia de empleado o profesor
     Route::prefix('preferencia')->name('preferencia.')->group(function () {
         Route::get('/usuarios', [PreferenciaUsuarioController::class, 'index'])->middleware('module_permission:usuarios,view')->name('usuarios.index');
+        Route::post('/usuarios/crear-masivos', [PreferenciaUsuarioController::class, 'bulkStore'])->middleware('module_permission:usuarios,create')->name('usuarios.bulk-store');
         Route::get('/usuarios/crear', [PreferenciaUsuarioController::class, 'create'])->middleware('module_permission:usuarios,create')->name('usuarios.create');
         Route::post('/usuarios', [PreferenciaUsuarioController::class, 'store'])->middleware('module_permission:usuarios,create')->name('usuarios.store');
         Route::get('/usuarios/{user}/editar', [PreferenciaUsuarioController::class, 'edit'])->middleware('module_permission:usuarios,update')->name('usuarios.edit');
@@ -318,6 +319,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/incidencias', [IncidenciaController::class, 'index'])->middleware('module_permission:incidencias,view')->name('incidencias.index');
     Route::get('/incidencias/create', [IncidenciaController::class, 'create'])->middleware('module_permission:incidencias,create')->name('incidencias.create');
     Route::post('/incidencias', [IncidenciaController::class, 'store'])->middleware('module_permission:incidencias,create')->name('incidencias.store');
+    Route::get('/incidencias/{incidencia}/formato', [IncidenciaController::class, 'formato'])->middleware('module_permission:incidencias,view')->name('incidencias.formato');
     Route::post('/incidencias/{incidencia}/estado', [IncidenciaController::class, 'updateStatus'])->middleware('module_permission:incidencias,approve')->name('incidencias.estado');
     Route::post('/incidencias/{incidencia}/vista', [IncidenciaController::class, 'markViewed'])->middleware('module_permission:incidencias,view')->name('incidencias.vista');
     Route::post('/incidencias/{incidencia}/firmar', [IncidenciaController::class, 'sign'])->middleware('module_permission:incidencias,view')->name('incidencias.firmar');

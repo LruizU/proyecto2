@@ -96,15 +96,15 @@
                     <tbody>
                         <?php $__currentLoopData = $inscripciones; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $ins): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <tr>
-                                <td class="fw-semibold"><?php echo e($ins->grupo->codigo_grupo); ?></td>
-                                <td><?php echo e($ins->grupo->nivel); ?></td>
+                                <td class="fw-semibold"><?php echo e($ins->grupo?->codigo_grupo ?? 'Grupo no disponible'); ?></td>
+                                <td><?php echo e($ins->grupo?->nivel ?? '—'); ?></td>
                                 <td>
-                                    <span class="badge <?php echo e($ins->grupo->turnoRel && str_starts_with($ins->grupo->turnoRel->descripcion_corta, 'V') ? 'bg-purple' : 'bg-warning'); ?>">
-                                        <?php echo e($ins->grupo->turnoRel?->descripcion_corta); ?>
+                                    <span class="badge <?php echo e($ins->grupo?->turnoRel && str_starts_with($ins->grupo->turnoRel->descripcion_corta, 'V') ? 'bg-purple' : 'bg-warning'); ?>">
+                                        <?php echo e($ins->grupo?->turnoRel?->descripcion_corta ?? '—'); ?>
 
                                     </span>
                                 </td>
-                                <td><?php echo e($ins->grupo->inscritos); ?></td>
+                                <td><?php echo e($ins->grupo?->inscritos ?? '—'); ?></td>
                                 <td>
                                     <span class="badge badge--status <?php echo e(($ins->estatus ?? null) === 'INSCRITO' ? 'badge--active' : 'badge--inactive'); ?>">
                                         <?php echo e($ins->estatus ?? '—'); ?>

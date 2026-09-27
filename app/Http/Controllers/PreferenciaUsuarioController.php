@@ -64,6 +64,86 @@ class PreferenciaUsuarioController extends Controller
         return view('preferencia.crear', compact('areas', 'puestos', 'empleadosDisponibles', 'profesoresDisponibles'));
     }
 
+    public function bulkStore(Request $request)
+    {
+        $data = $request->validate([
+            'preference_type' => ['required', 'in:employee,professor'],
+            'active_only' => ['nullable', 'boolean'],
+        ]);
+
+        $isEmployee = $data['preference_type'] === 'employee';
+        $activeOnly = (bool) ($data['active_only'] ?? false);
+        $created = [];
+        $skipped = [];
+        $errors = [];
+
+        DB::transaction(function () use ($isEmployee, $activeOnly, &$created, &$skipped, &$errors): void {
+            $query = $isEmployee
+                ? Employee::query()->whereNull('auth_user_id')
+                : Profesor::query()->whereNull('auth_user_id');
+
+            if ($activeOnly) {
+                $query->where('status_actual', 'A');
+            }
+
+            $profiles = $query->orderBy($isEmployee ? 'name' : 'nombre_profesor')->get();
+            $defaultGroup = PermissionGroup::where('name', $isEmployee ? 'Empleado' : 'Profesor')
+                ->where('is_default', true)
+                ->first();
+
+            foreach ($profiles as $profile) {
+                $name = $isEmployee ? trim((string) $profile->name) : trim((string) $profile->nombre_completo);
+                $reference = $isEmployee
+                    ? ($profile->numero_empleado ?: $profile->user_id ?: $profile->id)
+                    : ($profile->clave_profesor ?: $profile->getKey());
+
+                try {
+                    $username = $this->makeUsername($name ?: 'usuario'.$reference);
+                    $email = $this->makeUniqueEmail(
+                        $isEmployee ? $profile->email : $profile->email,
+                        $username
+                    );
+                    $password = Str::random(12);
+
+                    $user = User::create([
+                        'name' => $name ?: 'Usuario '.$reference,
+                        'username' => $username,
+                        'email' => $email,
+                        'password' => Hash::make($password),
+                        'role' => Role::Operator,
+                        'type' => $isEmployee ? 'employee' : 'professor',
+                    ]);
+
+                    $profile->auth_user_id = $user->id;
+                    $profile->save();
+
+                    if ($defaultGroup) {
+                        $this->syncGroups($user, [$defaultGroup->id]);
+                    }
+
+                    $created[] = [
+                        'name' => $user->name,
+                        'username' => $username,
+                        'email' => $email,
+                        'password' => $password,
+                    ];
+                } catch (\Throwable $exception) {
+                    $errors[] = $name ?: (string) $reference;
+                    report($exception);
+                }
+            }
+
+            $skipped = $profiles->count() - count($created) - count($errors);
+        });
+
+        return redirect()->route('preferencia.usuarios.index')->with('bulk_result', [
+            'type' => $isEmployee ? 'empleados' : 'profesores',
+            'created' => $created,
+            'skipped' => $skipped,
+            'errors' => $errors,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -242,5 +322,23 @@ class PreferenciaUsuarioController extends Controller
         }
 
         return $username;
+    }
+
+    private function makeUniqueEmail(?string $email, string $username): string
+    {
+        $email = trim((string) $email);
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) && ! User::where('email', $email)->exists()) {
+            return $email;
+        }
+
+        $base = Str::lower(preg_replace('/[^a-z0-9]/', '', Str::ascii($username)) ?: 'usuario');
+        $candidate = $base.'@ute.local';
+        $suffix = 2;
+
+        while (User::where('email', $candidate)->exists()) {
+            $candidate = $base.$suffix++.'@ute.local';
+        }
+
+        return $candidate;
     }
 }

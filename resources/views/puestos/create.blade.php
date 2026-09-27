@@ -4,7 +4,7 @@
 @section('breadcrumb', 'Catálogos RH › Puestos › Nuevo')
 
 @section('content')
-<x-page-header title="Nuevo puesto" subtitle="Registra un puesto y su relación con un área." :hide-title="false">
+<x-page-header title="Nuevo puesto" subtitle="Registra el ID, la descripción y el área del puesto." :hide-title="false">
     @slot('actions')
         <a href="{{ route('puestos.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Volver</a>
     @endslot
@@ -16,8 +16,8 @@
             @csrf
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="identificador">Identificador</label>
-                    <input type="text" id="identificador" name="identificador" class="form-control" value="{{ old('identificador') }}" required>
+                    <label class="form-label" for="identificador">ID de puesto</label>
+                    <input type="text" id="identificador" name="identificador" class="form-control" value="{{ old('identificador') }}" maxlength="50" required>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="descripcion">Descripción</label>

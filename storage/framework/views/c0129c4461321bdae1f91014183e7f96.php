@@ -126,34 +126,69 @@
                 </div>
             </div>
         <?php else: ?>
+            <?php
+                $diasSemana = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles', 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo'];
+                $sesionesHorario = $horarios->flatten(1)
+                    ->sortBy(fn ($clase) => $clase->sesion)
+                    ->pluck('sesion')
+                    ->filter()
+                    ->unique()
+                    ->values();
+                $horarioGrid = $horarios->flatten(1)->groupBy(fn ($clase) => $clase->dia . '-' . $clase->sesion);
+            ?>
             <div class="card">
-                <div class="card-body p-0">
-                    <?php $__currentLoopData = $horarios; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $dia => $clases): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                        <div class="<?php echo e($loop->first ? '' : 'border-top'); ?>">
-                            <div class="p-3 bg-light border-bottom fw-semibold">
-                                <span class="badge <?php echo e(in_array($dia, [6,7]) ? 'bg-purple' : 'bg-primary'); ?> me-2">
-                                    <?php echo e(['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'][$dia-1]); ?>
+                <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="h6 mb-1">Horario semanal</h2>
+                        <span class="small text-muted">Distribución de clases por sesión y día</span>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary"><?php echo e($sesionesHorario->count()); ?> sesiones</span>
+                </div>
+                <div class="card-body p-2 p-md-3">
+                    <div class="table-responsive horario-semanal-wrap">
+                        <table class="table horario-semanal-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="horario-hora-col">Sesión / hora</th>
+                                    <?php $__currentLoopData = $diasSemana; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $numeroDia => $nombreDia): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <th class="text-center <?php echo e($numeroDia >= 6 ? 'horario-fin-semana' : ''); ?>"><?php echo e($nombreDia); ?></th>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $__currentLoopData = $sesionesHorario; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sesion): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <?php
+                                        $sesionClase = $horarios->flatten(1)->firstWhere('sesion', $sesion);
+                                        $horaInicio = $sesionClase?->sesionBase?->hora_inicio?->format('H:i');
+                                        $horaFin = $sesionClase?->sesionBase?->hora_fin?->format('H:i');
+                                    ?>
+                                    <tr>
+                                        <th class="horario-hora-cell">
+                                            <span class="fw-semibold">Ses. <?php echo e($sesion); ?></span>
+                                            <small><?php echo e($horaInicio); ?> - <?php echo e($horaFin); ?></small>
+                                        </th>
+                                        <?php $__currentLoopData = $diasSemana; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $numeroDia => $nombreDia): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                            <td class="<?php echo e($numeroDia >= 6 ? 'horario-fin-semana' : ''); ?>">
+                                                <?php $__empty_1 = true; $__currentLoopData = $horarioGrid->get($numeroDia . '-' . $sesion, collect()); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $clase): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                                    <div class="horario-clase">
+                                                        <div class="horario-materia"><?php echo e($clase->materia?->nombre_asignatura ?? 'Materia no asignada'); ?></div>
+                                                        <div class="horario-codigo"><?php echo e($clase->clave_asignatura ?: 'Sin código'); ?></div>
+                                                        <div class="horario-detalle">
+                                                            <?php echo e($clase->profesor?->nombre_completo ?? 'Sin docente'); ?>
 
-                                </span>
-                                <?php echo e($clases->first()->sesionBase?->descripcion); ?>
-
-                            </div>
-                            <?php $__currentLoopData = $clases; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $clase): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <div class="p-3 border-bottom d-flex align-items-center gap-3">
-                                    <div class="text-nowrap small text-muted" style="width: 120px;">
-                                        <?php echo e($clase->sesionBase?->hora_inicio?->format('H:i')); ?> - <?php echo e($clase->sesionBase?->hora_fin?->format('H:i')); ?>
-
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-semibold"><?php echo e($clase->materia?->label); ?></div>
-                                        <div class="small text-muted">
-                                            <?php echo e($clase->profesor?->nombre_completo); ?> · <?php echo e($clase->ubicacion); ?> · <span class="badge <?php echo e($clase->tipoClase === 'PTC' ? 'bg-purple' : 'bg-info'); ?>"><?php echo e($clase->tipoClase); ?></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </div>
-                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                                            <span><?php echo e($clase->ubicacion ?: 'Aula no asignada'); ?></span>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                                    <span class="horario-vacio">—</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                    </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         <?php endif; ?>
@@ -206,4 +241,29 @@
     </div>
 </div>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('styles'); ?>
+<style>
+    .horario-semanal-wrap { overflow-x: auto; }
+    .horario-semanal-table { min-width: 980px; --bs-table-bg: var(--surface-1); --bs-table-color: var(--text); --bs-table-border-color: var(--border); }
+    .horario-semanal-table th,
+    .horario-semanal-table td { border-color: var(--border); }
+    .horario-semanal-table thead th { background: var(--surface-2); color: var(--text-secondary); font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; padding: .75rem .65rem; }
+    .horario-hora-col { width: 125px; }
+    .horario-hora-cell { background: var(--surface-2); color: var(--text); padding: .75rem .65rem; vertical-align: top; }
+    .horario-hora-cell small { display: block; color: var(--text-secondary); font-weight: 400; margin-top: .25rem; white-space: nowrap; }
+    .horario-semanal-table td { width: 125px; min-width: 125px; height: 92px; padding: .45rem; vertical-align: top; }
+    .horario-clase { min-height: 76px; padding: .55rem; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-left: 3px solid var(--primary); border-radius: .5rem; background: color-mix(in srgb, var(--primary) 8%, var(--surface-1)); }
+    .horario-materia { color: var(--text); font-weight: 700; font-size: .78rem; line-height: 1.25; }
+    .horario-codigo { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: .68rem; margin-top: .2rem; }
+    .horario-detalle { color: var(--text-secondary); font-size: .68rem; line-height: 1.3; margin-top: .45rem; }
+    .horario-detalle span { display: block; color: var(--text-tertiary); margin-top: .15rem; }
+    .horario-vacio { color: var(--text-tertiary); display: block; text-align: center; padding-top: 1.4rem; }
+    .horario-fin-semana { background: color-mix(in srgb, var(--text) 3%, var(--surface-1)) !important; }
+    @media (max-width: 640px) {
+        .horario-semanal-table { min-width: 860px; }
+        .horario-semanal-table td { height: 84px; }
+    }
+</style>
+<?php $__env->stopPush(); ?>
 <?php echo $__env->make('layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\ProyectoUTE\resources\views\academia\grupos\show.blade.php ENDPATH**/ ?>

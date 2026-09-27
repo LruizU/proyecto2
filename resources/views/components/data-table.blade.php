@@ -15,7 +15,7 @@
             </div>
         @else
             <div class="table-responsive">
-                <table class="table {{ $striped ? 'table-striped' : '' }} {{ $hover ? 'table-hover' : '' }} {{ $bordered ? 'table-bordered' : '' }} align-middle mb-0">
+                <table class="table table-cards {{ $striped ? 'table-striped' : '' }} {{ $hover ? 'table-hover' : '' }} {{ $bordered ? 'table-bordered' : '' }} align-middle mb-0">
                     <thead class="table-light">
                         <tr>
                             @foreach ($headers as $header)
@@ -46,12 +46,13 @@
                             <tr>
                                 @foreach ($headers as $header)
                                     @php
+                                        $headerLabel = $header['label'] ?? $header;
                                         $cellClass = isset($header['class']) ? $header['class'] : '';
                                         if (isset($header['hideOn'])) {
                                             $cellClass = trim($cellClass . ' d-none d-' . $header['hideOn'] . '-table-cell');
                                         }
                                     @endphp
-                                    <td class="{{ $cellClass }}">
+                                    <td class="{{ $cellClass }}" data-label="{{ e($headerLabel) }}">
                                         @if (isset($header['render']))
                                             {!! $header['render']($row) !!}
                                         @elseif (isset($header['field']))
@@ -62,7 +63,7 @@
                                     </td>
                                 @endforeach
                                 @if ($actions)
-                                    <td class="text-end">
+                                    <td class="text-end" data-label="Acciones">
                                         @if ($hasHiddenHeaders)
                                             <button type="button"
                                                     class="btn btn-outline-secondary btn-sm me-2"
@@ -97,7 +98,7 @@
                                         </div>
                                     </td>
                                 @elseif ($hasHiddenHeaders)
-                                    <td class="text-end">
+                                    <td class="text-end" data-label="Más">
                                         <button type="button"
                                                 class="btn btn-outline-secondary btn-sm"
                                                 data-bs-toggle="collapse"

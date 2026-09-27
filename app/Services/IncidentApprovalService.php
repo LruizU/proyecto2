@@ -38,6 +38,14 @@ class IncidentApprovalService
             $currentArea = $currentArea->parent()->first();
         }
 
+        $approvers->push([
+            'sequence' => $sequence,
+            'area_id' => null,
+            'approver_employee_id' => null,
+            'approver_user_id' => null,
+            'status' => 'pending',
+        ]);
+
         $approvers->each(function (array $step, int $index) use ($incidencia): void {
             IncidenciaApproval::updateOrCreate(
                 [
@@ -47,6 +55,7 @@ class IncidentApprovalService
                 [
                     'area_id' => $step['area_id'],
                     'approver_employee_id' => $step['approver_employee_id'],
+                    'approver_user_id' => $step['approver_user_id'] ?? null,
                     'status' => $step['status'],
                 ]
             );

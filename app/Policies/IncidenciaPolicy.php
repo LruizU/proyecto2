@@ -54,6 +54,10 @@ class IncidenciaPolicy
             return $employeeIds->contains($pendingApproval->approver_employee_id);
         }
 
+        if ($pendingApproval && $pendingApproval->approver_employee_id === null) {
+            return $user->isAdmin();
+        }
+
         return $employeeIds->contains($incidencia->responsable_area_id)
             || $employeeIds->contains($incidencia->director_id)
             || $employeeIds->contains($incidencia->profesor?->director_id);

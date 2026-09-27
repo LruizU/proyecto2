@@ -80,10 +80,13 @@
                                 <small class="text-muted">{{ $incidencia->puesto?->descripcion ?? 'Sin descripción' }}</small>
                             </td>
                             <td>
-                                @php
-                                    $directorNombre = $incidencia->director?->name ?? $incidencia->responsableArea?->name ?? '—';
-                                @endphp
-                                <div class="fw-semibold">{{ $directorNombre }}</div>
+                                @php($pendingApproval = $incidencia->approvals->where('status', 'pending')->sortBy('sequence')->first())
+                                @if($pendingApproval?->approver_employee_id === null && $pendingApproval)
+                                    <span class="badge bg-warning text-dark">Pendiente rector</span>
+                                @elseif($pendingApproval)
+                                    <span class="badge bg-info text-dark">Pendiente jefe</span>
+                                @endif
+                                <div class="fw-semibold">{{ $incidencia->director?->name ?? $incidencia->responsableArea?->name ?? '—' }}</div>
                                 <small class="text-muted">
                                     {{ $incidencia->director?->user_id ?? $incidencia->responsableArea?->user_id ?? 'Sin responsable' }}
                                 </small>
@@ -102,14 +105,11 @@
                                 @endif
                             </td>
                             <td>
-                                @php
-                                $estadoBadge = match($incidencia->estado) {
+                                <span class="badge badge--status {{ match($incidencia->estado) {
                                     'aprobada' => 'badge--active',
                                     'rechazada' => 'badge--inactive',
                                     default => 'badge--inactive'
-                                };
-                                @endphp
-                                <span class="badge badge--status {{ $estadoBadge }}">{{ $incidencia->estado }}</span>
+                                } }}">{{ $incidencia->estado }}</span>
                                 @if ($incidencia->visto_at)
                                     <small class="d-block text-success mt-1"><i class="bi bi-eye me-1"></i>Vista</small>
                                 @endif
@@ -118,7 +118,10 @@
                                 @endif
                             </td>
                             <td>
-                                @if (auth()->user()->canAccessModule('incidencias', 'approve'))
+                                <a href="{{ route('incidencias.formato', $incidencia) }}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Abrir formato imprimible">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                @if (auth()->user()->canAccessModule('incidencias', 'approve') && $pendingApproval)
                                     <div class="btn-group btn-group-sm" role="group">
                                         <form method="POST" action="{{ route('incidencias.estado', $incidencia) }}">
                                             @csrf

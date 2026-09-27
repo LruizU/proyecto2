@@ -6,14 +6,14 @@
 <?php $__env->startSection('content'); ?>
 <?php if (isset($component)) { $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Nuevo puesto','subtitle' => 'Registra un puesto y su relación con un área.','hideTitle' => false]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Nuevo puesto','subtitle' => 'Registra el ID, la descripción y el área del puesto.','hideTitle' => false]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
 <?php $component->withName('page-header'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Nuevo puesto','subtitle' => 'Registra un puesto y su relación con un área.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
+<?php $component->withAttributes(['title' => 'Nuevo puesto','subtitle' => 'Registra el ID, la descripción y el área del puesto.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
         <a href="<?php echo e(route('puestos.index')); ?>" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Volver</a>
     <?php $__env->endSlot(); ?>
@@ -34,8 +34,8 @@
             <?php echo csrf_field(); ?>
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="identificador">Identificador</label>
-                    <input type="text" id="identificador" name="identificador" class="form-control" value="<?php echo e(old('identificador')); ?>" required>
+                    <label class="form-label" for="identificador">ID de puesto</label>
+                    <input type="text" id="identificador" name="identificador" class="form-control" value="<?php echo e(old('identificador')); ?>" maxlength="50" required>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="descripcion">Descripción</label>

@@ -80,14 +80,14 @@
                     <tbody>
                         @foreach ($inscripciones as $ins)
                             <tr>
-                                <td class="fw-semibold">{{ $ins->grupo->codigo_grupo }}</td>
-                                <td>{{ $ins->grupo->nivel }}</td>
+                                <td class="fw-semibold">{{ $ins->grupo?->codigo_grupo ?? 'Grupo no disponible' }}</td>
+                                <td>{{ $ins->grupo?->nivel ?? '—' }}</td>
                                 <td>
-                                    <span class="badge {{ $ins->grupo->turnoRel && str_starts_with($ins->grupo->turnoRel->descripcion_corta, 'V') ? 'bg-purple' : 'bg-warning' }}">
-                                        {{ $ins->grupo->turnoRel?->descripcion_corta }}
+                                    <span class="badge {{ $ins->grupo?->turnoRel && str_starts_with($ins->grupo->turnoRel->descripcion_corta, 'V') ? 'bg-purple' : 'bg-warning' }}">
+                                        {{ $ins->grupo?->turnoRel?->descripcion_corta ?? '—' }}
                                     </span>
                                 </td>
-                                <td>{{ $ins->grupo->inscritos }}</td>
+                                <td>{{ $ins->grupo?->inscritos ?? '—' }}</td>
                                 <td>
                                     <span class="badge badge--status {{ ($ins->estatus ?? null) === 'INSCRITO' ? 'badge--active' : 'badge--inactive' }}">
                                         {{ $ins->estatus ?? '—' }}

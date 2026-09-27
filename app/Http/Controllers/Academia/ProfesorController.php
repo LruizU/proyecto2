@@ -197,7 +197,8 @@ class ProfesorController extends Controller
             if (isset($grid[$key])) {
                 $grid[$key]['clases'][] = [
                     'grupo' => $h->grupo?->codigo_grupo,
-                    'materia' => $h->materia?->label,
+                    'materia' => $h->materia?->nombre_asignatura ?? $h->materia?->label ?? 'Materia no asignada',
+                    'codigo_materia' => $h->clave_asignatura,
                     'aula' => $h->ubicacion,
                     'tipo' => $h->tipoClase,
                 ];

@@ -6,14 +6,14 @@
 <?php $__env->startSection('content'); ?>
 <?php if (isset($component)) { $__componentOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginalf8d4ea307ab1e58d4e472a43c8548d8e = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Nueva área','subtitle' => 'Crea un área con identificador, descripción y responsable.','hideTitle' => false]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.page-header','data' => ['title' => 'Nueva área','subtitle' => 'Registra el identificador, la descripción y el encargado del área.','hideTitle' => false]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
 <?php $component->withName('page-header'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['title' => 'Nueva área','subtitle' => 'Crea un área con identificador, descripción y responsable.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
+<?php $component->withAttributes(['title' => 'Nueva área','subtitle' => 'Registra el identificador, la descripción y el encargado del área.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
         <a href="<?php echo e(route('areas.index')); ?>" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i> Volver</a>
     <?php $__env->endSlot(); ?>
@@ -34,15 +34,15 @@
             <?php echo csrf_field(); ?>
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="identificador">Identificador</label>
-                    <input type="text" id="identificador" name="identificador" class="form-control" value="<?php echo e(old('identificador')); ?>" required>
+                    <label class="form-label" for="identificador">ID de área</label>
+                    <input type="text" id="identificador" name="identificador" class="form-control" value="<?php echo e(old('identificador')); ?>" maxlength="50" required>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="descripcion">Descripción</label>
                     <input type="text" id="descripcion" name="descripcion" class="form-control" value="<?php echo e(old('descripcion')); ?>">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label" for="empleado_responsable_id">Empleado responsable</label>
+                    <label class="form-label" for="empleado_responsable_id">Encargado</label>
                     <select id="empleado_responsable_id" name="empleado_responsable_id" class="form-select">
                         <option value="">Sin responsable</option>
                         <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $empleado): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>

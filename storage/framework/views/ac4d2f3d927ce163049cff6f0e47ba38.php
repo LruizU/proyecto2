@@ -97,7 +97,7 @@
 
 
 <?php if(empty($grid)): ?>
-    <div class="card">
+    <div class="card profesores-horario">
         <div class="card-body text-center text-muted py-5">
             <i class="bi bi-calendar-x fs-1 mb-2"></i>
             <p>No hay horarios programados para este ciclo</p>
@@ -136,6 +136,9 @@
                                             <?php $__currentLoopData = $grid["{$dia}-{$sesion}"]['clases']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $clase): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <div class="mb-2 p-2 rounded bg-light border">
                                                     <div class="fw-semibold small"><?php echo e($clase['materia']); ?></div>
+                                                    <?php if(!empty($clase['codigo_materia'])): ?>
+                                                        <div class="horario-codigo"><?php echo e($clase['codigo_materia']); ?></div>
+                                                    <?php endif; ?>
                                                     <div class="small text-muted"><?php echo e($clase['grupo']); ?> · <?php echo e($clase['aula']); ?></div>
                                                     <span class="badge <?php echo e(($clase['tipo'] ?? '') === 'PTC' ? 'bg-purple' : 'bg-info'); ?>"><?php echo e($clase['tipo'] ?? ''); ?></span>
                                                 </div>
@@ -154,4 +157,11 @@
     </div>
 <?php endif; ?>
 <?php $__env->stopSection(); ?>
+
+<?php $__env->startPush('styles'); ?>
+<style>
+    .profesores-horario .table td { min-width: 140px; vertical-align: top; }
+    .horario-codigo { color: var(--primary); font-family: 'JetBrains Mono', monospace; font-size: .68rem; }
+</style>
+<?php $__env->stopPush(); ?>
 <?php echo $__env->make('layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\xampp\htdocs\ProyectoUTE\resources\views\academia\profesores\horario.blade.php ENDPATH**/ ?>

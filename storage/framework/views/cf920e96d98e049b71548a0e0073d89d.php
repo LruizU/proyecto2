@@ -35,15 +35,15 @@
             <?php echo method_field('PUT'); ?>
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="identificador">Identificador</label>
-                    <input type="text" id="identificador" name="identificador" class="form-control" value="<?php echo e(old('identificador', $area->identificador)); ?>" required>
+                    <label class="form-label" for="identificador">ID de área</label>
+                    <input type="text" id="identificador" name="identificador" class="form-control" value="<?php echo e(old('identificador', $area->identificador)); ?>" maxlength="50" required>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="descripcion">Descripción</label>
                     <input type="text" id="descripcion" name="descripcion" class="form-control" value="<?php echo e(old('descripcion', $area->descripcion)); ?>">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label" for="empleado_responsable_id">Empleado responsable</label>
+                    <label class="form-label" for="empleado_responsable_id">Encargado</label>
                     <select id="empleado_responsable_id" name="empleado_responsable_id" class="form-select">
                         <option value="">Sin responsable</option>
                         <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $empleado): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>

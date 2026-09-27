@@ -17,8 +17,8 @@
             @method('PUT')
             <div class="row g-3">
                 <div class="col-md-4">
-                    <label class="form-label" for="identificador">Identificador</label>
-                    <input type="text" id="identificador" name="identificador" class="form-control" value="{{ old('identificador', $puesto->identificador) }}" required>
+                    <label class="form-label" for="identificador">ID de puesto</label>
+                    <input type="text" id="identificador" name="identificador" class="form-control" value="{{ old('identificador', $puesto->identificador) }}" maxlength="50" required>
                 </div>
                 <div class="col-md-8">
                     <label class="form-label" for="descripcion">Descripción</label>

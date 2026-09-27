@@ -120,10 +120,13 @@
                                 <small class="text-muted"><?php echo e($incidencia->puesto?->descripcion ?? 'Sin descripción'); ?></small>
                             </td>
                             <td>
-                                <?php
-                                    $directorNombre = $incidencia->director?->name ?? $incidencia->responsableArea?->name ?? '—';
-                                ?>
-                                <div class="fw-semibold"><?php echo e($directorNombre); ?></div>
+                                <?php ($pendingApproval = $incidencia->approvals->where('status', 'pending')->sortBy('sequence')->first()); ?>
+                                <?php if($pendingApproval?->approver_employee_id === null && $pendingApproval): ?>
+                                    <span class="badge bg-warning text-dark">Pendiente rector</span>
+                                <?php elseif($pendingApproval): ?>
+                                    <span class="badge bg-info text-dark">Pendiente jefe</span>
+                                <?php endif; ?>
+                                <div class="fw-semibold"><?php echo e($incidencia->director?->name ?? $incidencia->responsableArea?->name ?? '—'); ?></div>
                                 <small class="text-muted">
                                     <?php echo e($incidencia->director?->user_id ?? $incidencia->responsableArea?->user_id ?? 'Sin responsable'); ?>
 
@@ -144,14 +147,11 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php
-                                $estadoBadge = match($incidencia->estado) {
+                                <span class="badge badge--status <?php echo e(match($incidencia->estado) {
                                     'aprobada' => 'badge--active',
                                     'rechazada' => 'badge--inactive',
                                     default => 'badge--inactive'
-                                };
-                                ?>
-                                <span class="badge badge--status <?php echo e($estadoBadge); ?>"><?php echo e($incidencia->estado); ?></span>
+                                }); ?>"><?php echo e($incidencia->estado); ?></span>
                                 <?php if($incidencia->visto_at): ?>
                                     <small class="d-block text-success mt-1"><i class="bi bi-eye me-1"></i>Vista</small>
                                 <?php endif; ?>
@@ -160,7 +160,10 @@
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <?php if(auth()->user()->canAccessModule('incidencias', 'approve')): ?>
+                                <a href="<?php echo e(route('incidencias.formato', $incidencia)); ?>" class="btn btn-sm btn-outline-secondary" target="_blank" title="Abrir formato imprimible">
+                                    <i class="bi bi-printer"></i>
+                                </a>
+                                <?php if(auth()->user()->canAccessModule('incidencias', 'approve') && $pendingApproval): ?>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <form method="POST" action="<?php echo e(route('incidencias.estado', $incidencia)); ?>">
                                             <?php echo csrf_field(); ?>

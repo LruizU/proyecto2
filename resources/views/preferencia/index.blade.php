@@ -12,15 +12,60 @@
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
             </div>
         @endif
+        @if(session('bulk_result'))
+            @php($bulk = session('bulk_result'))
+            <div class="alert alert-success" role="status">
+                <div class="d-flex align-items-start gap-2">
+                    <i class="bi bi-check-circle fs-5"></i>
+                    <div class="flex-grow-1">
+                        <strong>Creación masiva completada.</strong>
+                        <div class="small mt-1">
+                            Se crearon {{ count($bulk['created']) }} usuarios de {{ $bulk['type'] }}.
+                            @if($bulk['skipped'] > 0) Se omitieron {{ $bulk['skipped'] }} registros. @endif
+                            @if(count($bulk['errors']) > 0) {{ count($bulk['errors']) }} no pudieron procesarse. @endif
+                        </div>
+                        @if(count($bulk['created']) > 0)
+                            <details class="mt-3">
+                                <summary class="fw-semibold">Ver credenciales iniciales</summary>
+                                <div class="table-responsive mt-2">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead><tr><th>Nombre</th><th>Usuario</th><th>Correo</th><th>Contraseña inicial</th></tr></thead>
+                                        <tbody>
+                                        @foreach($bulk['created'] as $credential)
+                                            <tr>
+                                                <td>{{ $credential['name'] }}</td>
+                                                <td><code>{{ $credential['username'] }}</code></td>
+                                                <td>{{ $credential['email'] }}</td>
+                                                <td><code>{{ $credential['password'] }}</code></td>
+                                            </tr>
+                                        @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="form-text">Guarda estas credenciales de forma segura. La contraseña inicial no volverá a mostrarse después de salir de esta página.</div>
+                            </details>
+                        @endif
+                        @if(count($bulk['errors']) > 0)
+                            <details class="mt-2"><summary>Registros con error</summary><div class="small mt-1">{{ implode(', ', $bulk['errors']) }}</div></details>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <div>
                     <h5 class="card-title mb-1">Usuarios del sistema</h5>
                     <p class="text-muted small mb-0">Administra credenciales, perfiles y grupos de seguridad.</p>
                 </div>
-                <a href="{{ route('preferencia.usuarios.create') }}" class="btn btn-primary">
-                    <i class="bi bi-person-plus me-1"></i> Crear usuario
-                </a>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#bulkUsersModal">
+                        <i class="bi bi-people me-1"></i> Crear usuarios masivamente
+                    </button>
+                    <a href="{{ route('preferencia.usuarios.create') }}" class="btn btn-primary">
+                        <i class="bi bi-person-plus me-1"></i> Crear usuario
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <form method="GET" class="row g-2 mb-4">
@@ -110,6 +155,42 @@
                 @endif
                 <div class="mt-3">{{ $users->links() }}</div>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="bulkUsersModal" tabindex="-1" aria-labelledby="bulkUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ route('preferencia.usuarios.bulk-store') }}">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkUsersModalLabel">Crear usuarios masivamente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-secondary">Se creará una cuenta únicamente para cada perfil que todavía no tenga usuario. Los perfiles con cuenta existente no se modifican.</p>
+                    <fieldset>
+                        <legend class="form-label fw-semibold">Tipo de perfil</legend>
+                        <div class="d-flex gap-3">
+                            <label class="form-check"><input class="form-check-input" type="radio" name="preference_type" value="employee" checked> Empleados</label>
+                            <label class="form-check"><input class="form-check-input" type="radio" name="preference_type" value="professor"> Profesores</label>
+                        </div>
+                    </fieldset>
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" name="active_only" value="1" id="bulkActiveOnly" checked>
+                        <label class="form-check-label" for="bulkActiveOnly">Incluir únicamente perfiles activos</label>
+                    </div>
+                    <div class="alert alert-warning small mt-3 mb-0">
+                        <i class="bi bi-shield-exclamation me-1"></i>
+                        Las credenciales iniciales se mostrarán una sola vez al terminar. Deberás entregarlas por un medio seguro.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-person-plus me-1"></i> Crear cuentas</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
