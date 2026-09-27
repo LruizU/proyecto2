@@ -2,10 +2,10 @@
 
 Describe SOLO la tarea activa. Al cerrarla, se resetea a "pendiente" — el detalle histórico va a DECISIONS.md o KNOWN_ISSUES.md.
 
-- Objetivo: Crear excepciones administrativas de puntualidad por empleado.
-- Estado: Implementado y verificado
-- Roles activados: Lead, Implementer, QA
-- Archivos relevantes: database/migrations/2026_09_26_220000_create_attendance_special_rules_table.php, app/Models/AttendanceSpecialRule.php, app/Http/Controllers/AttendanceSpecialRuleController.php, app/Models/Attendance.php, app/Http/Controllers/AttendanceController.php, resources/views/configuracion/asistencia-especial.blade.php
-- Último paso verificado: La migración nueva quedó aplicada; la ruta administrativa responde HTTP 200; PHP, Blade, diagnósticos y diff compilan correctamente. Las horas biométricas originales no se modifican.
-- Bloqueos: MySQL local (XAMPP) actualmente no está en ejecución, impidiendo correr la suite de pruebas completa con RefreshDatabase.
-- Próximo paso: Listo para recibir la siguiente tarea de desarrollo o mantenimiento.
+- Objetivo: Preparar el proyecto Laravel para subirlo a un servidor.
+- Estado: Preparado y verificado
+- Roles activados: Lead, Implementer, QA, DevOps
+- Archivos relevantes: .env.example, .gitignore, deploy.sh, database/migrations/2026_09_26_140851_create_ofertas_table.php
+- Último paso verificado: La migración corregida pasó `php artisan migrate --force`; las cachés de vistas/rutas y el build Vite finalizaron correctamente; se añadieron exclusiones para secretos, logs, respaldos y cachés generadas.
+- Bloqueos: No se ejecutó un despliegue real porque requiere credenciales y servidor de destino.
+- Próximo paso: Copiar el código al servidor, crear `.env` real con secretos fuera del repositorio, configurar DocumentRoot en `public/` y ejecutar `deploy.sh` después de revisar migraciones pendientes.
