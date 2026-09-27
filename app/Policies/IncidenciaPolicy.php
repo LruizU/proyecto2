@@ -35,11 +35,8 @@ class IncidenciaPolicy
 
     public function approve(User $user, Incidencia $incidencia): bool
     {
-        if ($user->isAdmin()) {
-            return true;
-        }
-
-        if (! $user->hasModulePermission('incidencias', 'approve')) {
+        if (! $user->hasModulePermission('incidencias', 'approve')
+            || (! $user->isJefe() && ! $user->isRector())) {
             return false;
         }
 
@@ -51,16 +48,21 @@ class IncidenciaPolicy
             ->first();
 
         if ($pendingApproval && $pendingApproval->approver_employee_id !== null) {
-            return $employeeIds->contains($pendingApproval->approver_employee_id);
+            return $user->isJefe() && $employeeIds->contains($pendingApproval->approver_employee_id);
         }
 
         if ($pendingApproval && $pendingApproval->approver_employee_id === null) {
-            return $user->isAdmin();
+            return $user->isRector()
+                && ($pendingApproval->approver_user_id === null
+                    || $pendingApproval->approver_user_id === $user->id);
         }
 
-        return $employeeIds->contains($incidencia->responsable_area_id)
-            || $employeeIds->contains($incidencia->director_id)
-            || $employeeIds->contains($incidencia->profesor?->director_id);
+        return false;
+    }
+
+    public function delete(User $user, Incidencia $incidencia): bool
+    {
+        return $user->isAdmin();
     }
 
     public function markViewed(User $user, Incidencia $incidencia): bool

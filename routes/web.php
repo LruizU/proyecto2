@@ -10,8 +10,11 @@ use App\Http\Controllers\Academia\GrupoController as AcademiaGrupoController;
 use App\Http\Controllers\Academia\HorarioController as AcademiaHorarioController;
 use App\Http\Controllers\Academia\PlanController as AcademiaPlanController;
 use App\Http\Controllers\Academia\ProfesorController as AcademiaProfesorController;
+use App\Http\Controllers\Academia\OfertaController as AcademiaOfertaController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceSettingsController;
+use App\Http\Controllers\AttendanceSpecialRuleController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceController;
@@ -34,7 +37,9 @@ Route::post('/login', [AuthController::class, 'store'])->middleware(['guest', 't
 Route::post('/logout', [AuthController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+    Route::view('/', 'welcome')->name('welcome.root');
+    Route::view('/bienvenida', 'welcome')->name('welcome');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('kpis/json', [DashboardController::class, 'kpisJson'])->name('dashboard.kpisJson');
 
     Route::middleware('module_permission:dashboard,view')->group(function () {
@@ -48,10 +53,10 @@ Route::middleware('auth')->group(function () {
             Route::get('/', [AcademiaDashboardController::class, 'index'])->name('dashboard');
             Route::get('kpis-json', [AcademiaDashboardController::class, 'kpisJson'])->name('kpisJson');
         // Oferta management
-        Route::resource('ofertas', Academia\OfertaController::class)
+        Route::resource('ofertas', AcademiaOfertaController::class)
             ->except(['show'])
             ->middleware('module_permission:academia.ofertas,view');
-        Route::get('ofertas/{oferta}', [Academia\OfertaController::class, 'show'])
+        Route::get('ofertas/{oferta}', [AcademiaOfertaController::class, 'show'])
             ->name('ofertas.show')
             ->middleware('module_permission:academia.ofertas,view');
             Route::get('materias', function () {
@@ -93,6 +98,8 @@ Route::middleware('auth')->group(function () {
 
             // Horarios
             Route::prefix('horarios')->name('horarios.')->group(function () {
+                Route::get('/', fn () => redirect()->route('academia.horarios.clase'))
+                    ->name('index');
                 Route::get('clase', [AcademiaHorarioController::class, 'clase'])->name('clase');
                 Route::post('clase/asistencia', [AcademiaHorarioController::class, 'guardarAsistencia'])->name('clase.asistencia.guardar');
                 Route::get('profesor', [AcademiaHorarioController::class, 'profesor'])->name('profesor');
@@ -250,14 +257,16 @@ Route::middleware('auth')->group(function () {
             ->name('usuarios.captura-asistencia.update');
     });
 
+    Route::get('areas/create', [AreaController::class, 'create'])
+        ->middleware('module_permission:areas,create')
+        ->name('areas.create');
+    Route::post('areas', [AreaController::class, 'store'])
+        ->middleware('module_permission:areas,create')
+        ->name('areas.store');
     Route::resource('areas', AreaController::class)
         ->only(['index', 'show'])
         ->parameters(['areas' => 'area'])
         ->middleware('module_permission:areas,view');
-    Route::resource('areas', AreaController::class)
-        ->only(['create', 'store'])
-        ->parameters(['areas' => 'area'])
-        ->middleware('module_permission:areas,create');
     Route::resource('areas', AreaController::class)
         ->only(['edit', 'update'])
         ->parameters(['areas' => 'area'])
@@ -266,14 +275,16 @@ Route::middleware('auth')->group(function () {
         ->only(['destroy'])
         ->parameters(['areas' => 'area'])
         ->middleware('module_permission:areas,delete');
+    Route::get('puestos/create', [PuestoController::class, 'create'])
+        ->middleware('module_permission:puestos,create')
+        ->name('puestos.create');
+    Route::post('puestos', [PuestoController::class, 'store'])
+        ->middleware('module_permission:puestos,create')
+        ->name('puestos.store');
     Route::resource('puestos', PuestoController::class)
         ->only(['index', 'show'])
         ->parameters(['puestos' => 'puesto'])
         ->middleware('module_permission:puestos,view');
-    Route::resource('puestos', PuestoController::class)
-        ->only(['create', 'store'])
-        ->parameters(['puestos' => 'puesto'])
-        ->middleware('module_permission:puestos,create');
     Route::resource('puestos', PuestoController::class)
         ->only(['edit', 'update'])
         ->parameters(['puestos' => 'puesto'])
@@ -321,8 +332,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/incidencias', [IncidenciaController::class, 'store'])->middleware('module_permission:incidencias,create')->name('incidencias.store');
     Route::get('/incidencias/{incidencia}/formato', [IncidenciaController::class, 'formato'])->middleware('module_permission:incidencias,view')->name('incidencias.formato');
     Route::post('/incidencias/{incidencia}/estado', [IncidenciaController::class, 'updateStatus'])->middleware('module_permission:incidencias,approve')->name('incidencias.estado');
+    Route::delete('/incidencias/{incidencia}', [IncidenciaController::class, 'destroy'])->middleware('admin')->name('incidencias.destroy');
     Route::post('/incidencias/{incidencia}/vista', [IncidenciaController::class, 'markViewed'])->middleware('module_permission:incidencias,view')->name('incidencias.vista');
     Route::post('/incidencias/{incidencia}/firmar', [IncidenciaController::class, 'sign'])->middleware('module_permission:incidencias,view')->name('incidencias.firmar');
+
+    Route::get('/configuracion/asistencia', [AttendanceSettingsController::class, 'edit'])
+        ->middleware('admin')->name('configuracion.asistencia.edit');
+    Route::put('/configuracion/asistencia', [AttendanceSettingsController::class, 'update'])
+        ->middleware('admin')->name('configuracion.asistencia.update');
+    Route::get('/configuracion/asistencia-especial', [AttendanceSpecialRuleController::class, 'index'])
+        ->middleware('admin')->name('configuracion.asistencia-especial.index');
+    Route::post('/configuracion/asistencia-especial', [AttendanceSpecialRuleController::class, 'store'])
+        ->middleware('admin')->name('configuracion.asistencia-especial.store');
+    Route::delete('/configuracion/asistencia-especial/{attendanceSpecialRule}', [AttendanceSpecialRuleController::class, 'destroy'])
+        ->middleware('admin')->name('configuracion.asistencia-especial.destroy');
 
     Route::get('/fingerprints', [EmployeeController::class, 'fingerprints'])
         ->middleware('module_permission:empleados,view')

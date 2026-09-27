@@ -163,7 +163,16 @@
                                 <a href="<?php echo e(route('incidencias.formato', $incidencia)); ?>" class="btn btn-sm btn-outline-secondary" target="_blank" title="Abrir formato imprimible">
                                     <i class="bi bi-printer"></i>
                                 </a>
-                                <?php if(auth()->user()->canAccessModule('incidencias', 'approve') && $pendingApproval): ?>
+                                <?php if(auth()->user()->isAdmin()): ?>
+                                    <form method="POST" action="<?php echo e(route('incidencias.destroy', $incidencia)); ?>" class="d-inline" onsubmit="return confirm('¿Deseas eliminar esta incidencia? Esta acción no se puede deshacer.')">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('DELETE'); ?>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar incidencia">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                                <?php if($pendingApproval && auth()->user()->can('approve', $incidencia)): ?>
                                     <div class="btn-group btn-group-sm" role="group">
                                         <form method="POST" action="<?php echo e(route('incidencias.estado', $incidencia)); ?>">
                                             <?php echo csrf_field(); ?>

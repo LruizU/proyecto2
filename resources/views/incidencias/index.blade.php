@@ -121,7 +121,16 @@
                                 <a href="{{ route('incidencias.formato', $incidencia) }}" class="btn btn-sm btn-outline-secondary" target="_blank" title="Abrir formato imprimible">
                                     <i class="bi bi-printer"></i>
                                 </a>
-                                @if (auth()->user()->canAccessModule('incidencias', 'approve') && $pendingApproval)
+                                @if (auth()->user()->isAdmin())
+                                    <form method="POST" action="{{ route('incidencias.destroy', $incidencia) }}" class="d-inline" onsubmit="return confirm('¿Deseas eliminar esta incidencia? Esta acción no se puede deshacer.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar incidencia">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                                @if ($pendingApproval && auth()->user()->can('approve', $incidencia))
                                     <div class="btn-group btn-group-sm" role="group">
                                         <form method="POST" action="{{ route('incidencias.estado', $incidencia) }}">
                                             @csrf

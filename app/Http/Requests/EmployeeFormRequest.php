@@ -19,7 +19,7 @@ final class EmployeeFormRequest extends FormRequest
 
         if ($isUpdate) {
             return [
-                'name' => ['required', 'string', 'max:24'],
+                'name' => ['required', 'string'],
                 'area_id' => ['nullable', 'exists:areas,id'],
                 'puesto_id' => ['nullable', 'exists:puestos,id'],
                 'auth_user_id' => ['nullable', 'exists:users,id'],
@@ -31,7 +31,7 @@ final class EmployeeFormRequest extends FormRequest
 
         return [
             'device_id' => ['required', 'exists:devices,id'],
-            'name' => ['required', 'string', 'max:24'],
+            'name' => ['required', 'string'],
             'user_id' => ['required', 'digits_between:1,9', 'unique:employees,user_id'],
             'area_id' => ['nullable', 'exists:areas,id'],
             'puesto_id' => ['nullable', 'exists:puestos,id'],

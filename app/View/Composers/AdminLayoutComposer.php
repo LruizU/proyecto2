@@ -9,7 +9,11 @@ use App\Models\Device;
 use App\Models\DeviceSync;
 use App\Models\Employee;
 use App\Models\Fingerprint;
+use App\Models\Area;
+use App\Models\NavigationItem;
+use App\Models\Puesto;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 
 /**
@@ -220,22 +224,26 @@ class AdminLayoutComposer
 
     private function search(): array
     {
-        $isAdmin = Auth::user()->isAdmin();
+        $user = Auth::user();
+        $isAdmin = $user->isAdmin();
 
-        $devices = Device::orderBy('name')->limit(30)->get()
+        $devices = $this->canAccess('dispositivos', 'view')
+            ? Device::orderBy('name')->limit(50)->get()
             ->map(fn (Device $d) => [
                 'name' => $d->name,
                 'ip' => $d->ip,
                 'url' => route('devices.show', $d),
-            ])->values();
+            ])->values()
+            : collect();
 
         // Catálogo central: cada empleado puede estar enrolado en varios
         // checadores vía la pivote device_employee. La relación legada
         // device() ya no existe — usar devices() y derivar etiqueta/URL.
-        $employees = Employee::query()
+        $employees = $this->canAccess('empleados', 'view')
+            ? Employee::query()
             ->with('devices:id,name')
             ->orderBy('name')
-            ->limit(30)
+            ->limit(50)
             ->get()
             ->map(function (Employee $e) use ($isAdmin): array {
                 $firstDevice = $e->devices->first();
@@ -248,27 +256,46 @@ class AdminLayoutComposer
                         ? route('employees.edit', $e)
                         : ($firstDevice ? route('devices.show', $firstDevice) : '#'),
                 ];
-            })->values();
+            })->values()
+            : collect();
 
-        $pages = [
-            ['label' => 'Dispositivos', 'keywords' => 'checadores red biometrica', 'url' => route('devices.index'), 'icon' => 'bi-hdd-network'],
-            ['label' => 'Empleados', 'keywords' => 'personas usuarios', 'url' => route('employees.index'), 'icon' => 'bi-people'],
+        $pages = NavigationItem::query()
+            ->with('module')
+            ->where('active', true)
+            ->orderBy('section')
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->get()
+            ->filter(fn (NavigationItem $item): bool => Route::has($item->route_name))
+            ->filter(fn (NavigationItem $item): bool => ! $item->admin_only || $isAdmin)
+            ->filter(fn (NavigationItem $item): bool => ! $item->module
+                || $this->canAccess($item->module->slug, $item->permission_action))
+            ->map(fn (NavigationItem $item): array => [
+                'label' => $item->label,
+                'keywords' => trim($item->section.' '.$item->label.' '.$item->route_name),
+                'url' => route($item->route_name),
+                'icon' => $item->icon ?: 'bi-grid-1x2',
+            ])
+            ->values()
+            ->all();
+
+        $actions = [
+            ['module' => 'dispositivos', 'action' => 'create', 'label' => 'Registrar dispositivo', 'keywords' => 'nuevo agregar checador', 'route' => 'devices.create', 'icon' => 'bi-plus-circle'],
+            ['module' => 'empleados', 'action' => 'create', 'label' => 'Nuevo empleado', 'keywords' => 'agregar persona', 'route' => 'employees.create', 'icon' => 'bi-person-plus'],
+            ['module' => 'areas', 'action' => 'create', 'label' => 'Nueva área', 'keywords' => 'crear departamento organización', 'route' => 'areas.create', 'icon' => 'bi-plus-circle'],
+            ['module' => 'puestos', 'action' => 'create', 'label' => 'Nuevo puesto', 'keywords' => 'crear cargo trabajo', 'route' => 'puestos.create', 'icon' => 'bi-plus-circle'],
         ];
-
-        if ($this->canAccess('dashboard', 'view')) {
-            array_unshift($pages, ['label' => 'Panel de control', 'keywords' => 'inicio dashboard resumen', 'url' => route('dashboard'), 'icon' => 'bi-speedometer2']);
+        foreach ($actions as $action) {
+            if ($this->canAccess($action['module'], $action['action']) && Route::has($action['route'])) {
+                $pages[] = [
+                    'label' => $action['label'],
+                    'keywords' => $action['keywords'],
+                    'url' => route($action['route']),
+                    'icon' => $action['icon'],
+                ];
+            }
         }
 
-        if ($this->canAccess('asistencias', 'view')) {
-            $pages[] = ['label' => 'Asistencias', 'keywords' => 'checadas registros marcado', 'url' => route('attendances.index'), 'icon' => 'bi-calendar-check'];
-        }
-
-        if ($isAdmin) {
-            array_push($pages,
-                ['label' => 'Registrar dispositivo', 'keywords' => 'nuevo agregar checador', 'url' => route('devices.create'), 'icon' => 'bi-plus-circle'],
-                ['label' => 'Nuevo empleado', 'keywords' => 'agregar persona', 'url' => route('employees.create'), 'icon' => 'bi-person-plus']
-            );
-        }
         if ($this->canAccess('asistencias', 'export')) {
             $pages[] = ['label' => 'Exportar asistencias (CSV)', 'keywords' => 'descargar excel reporte', 'url' => route('attendances.export'), 'icon' => 'bi-file-earmark-spreadsheet'];
         }
@@ -276,10 +303,30 @@ class AdminLayoutComposer
             $pages[] = ['label' => 'Imprimir reporte', 'keywords' => 'pdf imprimir', 'url' => route('attendances.print'), 'icon' => 'bi-printer'];
         }
 
+        $areas = $this->canAccess('areas', 'view')
+            ? Area::query()->orderBy('identificador')->limit(50)->get()
+                ->map(fn (Area $area): array => [
+                    'name' => $area->identificador.' - '.($area->descripcion ?: 'Área'),
+                    'ip' => 'Área',
+                    'url' => route('areas.show', $area),
+                ])->values()
+            : collect();
+
+        $puestos = $this->canAccess('puestos', 'view')
+            ? Puesto::query()->with('area')->orderBy('identificador')->limit(50)->get()
+                ->map(fn (Puesto $puesto): array => [
+                    'name' => $puesto->identificador.' - '.($puesto->descripcion ?: 'Puesto'),
+                    'ip' => $puesto->area?->identificador ? 'Área: '.$puesto->area->identificador : 'Puesto',
+                    'url' => route('puestos.show', $puesto),
+                ])->values()
+            : collect();
+
         return [
             'pages' => $pages,
             'devices' => $devices,
             'employees' => $employees,
+            'areas' => $areas,
+            'puestos' => $puestos,
         ];
     }
 

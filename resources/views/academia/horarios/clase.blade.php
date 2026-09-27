@@ -46,6 +46,14 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <label class="form-label">Tipo de horario</label>
+                <select name="tipo_horario" class="form-select">
+                    <option value="TODOS" {{ $filtros['tipoHorario'] === 'TODOS' ? 'selected' : '' }}>Clases y cursos</option>
+                    <option value="CLASE" {{ $filtros['tipoHorario'] === 'CLASE' ? 'selected' : '' }}>Solo clases</option>
+                    <option value="CURSO" {{ $filtros['tipoHorario'] === 'CURSO' ? 'selected' : '' }}>Solo cursos</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label">Edificio</label>
                 <select name="edificio" class="form-select">
                     <option value="">Todos</option>
@@ -56,7 +64,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Día</label>
-                <select name="dia" class="form-select">
+                <select name="dia" class="form-select" {{ $esAdministrador ? '' : 'disabled' }}>
                     @foreach ([1=>'Lunes',2=>'Martes',3=>'Miércoles',4=>'Jueves',5=>'Viernes',6=>'Sábado',7=>'Domingo'] as $d => $label)
                         <option value="{{ $d }}" {{ $filtros['dia'] == $d ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
@@ -64,7 +72,10 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Fecha</label>
-                <input type="date" name="fecha" class="form-control" value="{{ $filtros['fecha'] }}">
+                <input type="date" name="fecha" class="form-control" value="{{ $filtros['fecha'] }}" {{ $esAdministrador ? '' : 'disabled' }}>
+                @unless ($esAdministrador)
+                    <small class="text-muted">Día y fecha definidos por el sistema.</small>
+                @endunless
             </div>
             <div class="col-12 d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary px-4">Filtrar ubicación y horario</button>
@@ -76,7 +87,7 @@
 @if ($filtros['nivel'] && $filtros['turno'])
     {{-- KPIs --}}
     <div class="kpi-grid mb-4">
-        <x-stat-card :icon="'bi-calendar-week'" :label="'Total clases'" :value="$stats['total_clases']" :color="'purple'">
+        <x-stat-card :icon="'bi-calendar-week'" :label="$filtros['tipoHorario'] === 'CURSO' ? 'Total cursos' : ($filtros['tipoHorario'] === 'CLASE' ? 'Total clases' : 'Total horarios')" :value="$stats['total_clases']" :color="'purple'">
             <div class="kpi-trend flat">–</div>
         </x-stat-card>
         <x-stat-card :icon="'bi-check-circle'" :label="'Capturadas'" :value="$stats['capturadas'] . '/' . $stats['total_clases']" :color="'green'">
@@ -155,10 +166,15 @@
                                     </td>
                                     <td>
                                         <div class="fw-semibold">{{ $cl['NOMBREPROFESOR'] }}</div>
-                                        <div class="text-muted small">{{ $cl['MATERIA_NOMBRE'] }}</div>
+                                        <div class="text-muted small">
+                                            {{ $cl['MATERIA_NOMBRE'] }}
+                                            @if (($cl['TIPO_HORARIO'] ?? 'CLASE') === 'CURSO')
+                                                <span class="badge bg-info-subtle text-info ms-1">Curso</span>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold">{{ $cl['CODIGO_GRUPO'] }}</div>
+                                        <div class="fw-semibold">{{ ($cl['TIPO_HORARIO'] ?? 'CLASE') === 'CURSO' ? 'Curso' : $cl['CODIGO_GRUPO'] }}</div>
                                         <div class="small text-muted">
                                             {{ $cl['GRADO'] ?? '' }}° · {{ $cl['TURNO'] ?? '' }}
                                             <span class="ms-1">· {{ $cl['ALUMNOS_TOTAL'] }} alumnos</span>
@@ -182,6 +198,7 @@
                                                     "I"=>$cl["INICIAL"],"F"=>$cl["FINAL"],"P"=>$cl["PERIODO"],
                                                     "grupo"=>$cl["CODIGO_GRUPO"],"profesor"=>$cl["CLAVEPROFESOR"],
                                                     "asig"=>$cl["CLAVEASIGNATURA"],"dia"=>$cl["DIA"],"sesion"=>$cl["SESION"],
+                                                    "tipo"=>$cl["TIPO_HORARIO"] ?? "CLASE","cursoDetId"=>$cl["CURSO_DET_ID"] ?? null,
                                                     "fecha"=>$filtros["fecha"],"nombre"=>$cl["NOMBREPROFESOR"],
                                                     "materia"=>$cl["MATERIA_NOMBRE"],"grupoLabel"=>$cl["CODIGO_GRUPO"],
                                                     "sede"=>$cl["SEDE_NOMBRE"] ?? $cl["ID_CAMPUS"],"edificio"=>$cl["EDIFICIO"],"aula"=>$cl["AULA"],
@@ -207,6 +224,7 @@
             <input type="hidden" name="inicial" id="acInicial"><input type="hidden" name="final" id="acFinal"><input type="hidden" name="periodo" id="acPeriodo">
             <input type="hidden" name="codigo_grupo" id="acGrupo"><input type="hidden" name="clave_profesor" id="acProfesor"><input type="hidden" name="clave_asignatura" id="acAsignatura">
             <input type="hidden" name="dia" id="acDia"><input type="hidden" name="sesion" id="acSesion"><input type="hidden" name="fecha" id="acFecha">
+            <input type="hidden" name="tipo_horario" id="acTipoHorario"><input type="hidden" name="curso_det_id" id="acCursoDetId">
             <div class="row g-3 mb-3">
                 <div class="col-md-6"><label class="form-label">Profesor</label><input type="text" id="acNombre" class="form-control" readonly></div>
                 <div class="col-md-6"><label class="form-label">Materia</label><input type="text" id="acMateria" class="form-control" readonly></div>
@@ -242,6 +260,8 @@
         document.getElementById('acDia').value = clase.dia;
         document.getElementById('acSesion').value = clase.sesion;
         document.getElementById('acFecha').value = clase.fecha;
+        document.getElementById('acTipoHorario').value = clase.tipo || '';
+        document.getElementById('acCursoDetId').value = clase.cursoDetId || '';
         document.getElementById('acNombre').value = clase.nombre;
         document.getElementById('acMateria').value = clase.materia;
         document.getElementById('acGrupoLabel').value = clase.grupoLabel;

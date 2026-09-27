@@ -1432,6 +1432,95 @@ html[data-theme="light"] .badge-cat { background: transparent !important; }
 .attendance-row--approved {
 	box-shadow: inset 4px 0 0 var(--cat-green);
 }
+.welcome-screen {
+	max-width: 760px;
+	margin: 10vh auto 0;
+	padding: 56px 42px;
+	border: 1px solid var(--border);
+	border-radius: 20px;
+	background: linear-gradient(135deg, var(--surface), var(--surface-2));
+	box-shadow: 0 18px 50px rgba(15, 23, 42, .08);
+	text-align: center;
+}
+.welcome-screen__icon {
+	width: 68px;
+	height: 68px;
+	display: grid;
+	place-items: center;
+	margin: 0 auto 22px;
+	border-radius: 20px;
+	background: var(--primary-soft);
+	color: var(--primary);
+	font-size: 30px;
+}
+.welcome-screen__eyebrow {
+	margin-bottom: 10px;
+	color: var(--primary);
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: .1em;
+	text-transform: uppercase;
+}
+.welcome-screen h1 { margin-bottom: 14px; }
+.welcome-screen__text { max-width: 560px; margin: 0 auto; color: var(--text-secondary); line-height: 1.7; }
+.welcome-screen__actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.attendance-page .bi {
+	font-size: 1em;
+	line-height: 1;
+	vertical-align: -0.1em;
+}
+.attendance-page .btn .bi {
+	font-size: .95em;
+}
+.attendance-page nav[aria-label="Pagination Navigation"] {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 36px;
+	height: auto;
+	margin-top: 12px;
+}
+.attendance-page nav[aria-label="Pagination Navigation"] > div:first-child { display: none; }
+.attendance-page nav[aria-label="Pagination Navigation"] > div:nth-child(2) {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	gap: 16px;
+}
+.attendance-page nav[aria-label="Pagination Navigation"] p { margin: 0; }
+.attendance-page nav[aria-label="Pagination Navigation"] > div:nth-child(2) > div:last-child > span {
+	display: inline-flex;
+	align-items: center;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, .08);
+}
+.attendance-page nav[aria-label="Pagination Navigation"] a,
+.attendance-page nav[aria-label="Pagination Navigation"] [aria-current="page"] > span,
+.attendance-page nav[aria-label="Pagination Navigation"] [aria-disabled="true"] > span {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	padding: 6px 10px;
+	border: 1px solid var(--border);
+	background: var(--surface);
+	color: var(--text-secondary);
+	font-size: 13px;
+	line-height: 1;
+	text-decoration: none;
+}
+.attendance-page nav[aria-label="Pagination Navigation"] a:hover {
+	background: var(--primary-soft);
+	color: var(--primary);
+}
+.attendance-page nav[aria-label="Pagination Navigation"] svg {
+	width: 1.25rem;
+	height: 1.25rem;
+	max-width: 1.25rem;
+	max-height: 1.25rem;
+	display: block;
+}
 .attendance-punch {
 	display: flex;
 	align-items: baseline;
@@ -1710,59 +1799,25 @@ html[data-theme="light"] .ref-chip:hover { color: var(--primary); }
 
 	/* tabla → lista de tarjetas */
 	.table-cards thead { display: none; }
-	.table-cards, .table-cards tbody, .table-cards tr, .table-cards td { display: block; width: 100%; 		.table-cards td[data-label="Acciones"],
-		.table-cards td[data-label="Más"] {
-			justify-content: flex-end;
-		}
-		.table-cards td[data-label="Acciones"]::before,
-		.table-cards td[data-label="Más"]::before {
-			margin-right: auto;
-		}
-		.carga-academica-table .carga-block-col {
-			display: none !important;
-		}
-		.carga-academica-table {
-			min-width: 0;
-		}
-		.data-table-shell .table-cards tbody tr.collapse {
-			display: none;
-		}
-
-		@media print {
-			.app-sidebar,
-			.topbar,
-			.global-alerts,
-			.toast-stack,
-			.notify-flyout {
-				display: none !important;
-			}
-			.app-main,
-			body {
-				margin: 0 !important;
-				padding: 0 !important;
-				background: #fff !important;
-				color: #111827 !important;
-			}
-			.data-table-shell,
-			.dashboard-table-card {
-				box-shadow: none !important;
-				border: 1px solid #cbd5e1 !important;
-			}
-			.table-responsive {
-				max-height: none !important;
-				overflow: visible !important;
-			}
-			.print-report-meta {
-				display: block !important;
-				padding: 0 0 12px;
-				border-bottom: 2px solid #111827;
-				color: #111827 !important;
-			}
-		}
-		.data-table-shell .table-cards tbody tr.collapse.show {
-			display: block;
-		}
+	.table-cards,
+	.table-cards tbody,
+	.table-cards tr,
+	.table-cards td {
+		display: block;
+		width: 100%;
 	}
+	.table-cards td[data-label="Acciones"],
+	.table-cards td[data-label="Más"] {
+		justify-content: flex-end;
+	}
+	.table-cards td[data-label="Acciones"]::before,
+	.table-cards td[data-label="Más"]::before {
+		margin-right: auto;
+	}
+	.carga-academica-table .carga-block-col { display: none !important; }
+	.carga-academica-table { min-width: 0; }
+	.data-table-shell .table-cards tbody tr.collapse { display: none; }
+	.data-table-shell .table-cards tbody tr.collapse.show { display: block; }
 	.table-cards tr {
 		margin-bottom: 12px;
 		border: 1px solid var(--border);
@@ -1790,6 +1845,38 @@ html[data-theme="light"] .ref-chip:hover { color: var(--primary); }
 	}
 	.table-cards td[data-label=""]::before { display: none; }
 	.table-cards td:last-child { border-top: 1px solid var(--border) !important; margin-top: 4px; padding-top: 10px !important; }
+}
+
+@media print {
+	.app-sidebar,
+	.topbar,
+	.global-alerts,
+	.toast-stack,
+	.notify-flyout {
+		display: none !important;
+	}
+	.app-main,
+	body {
+		margin: 0 !important;
+		padding: 0 !important;
+		background: #fff !important;
+		color: #111827 !important;
+	}
+	.data-table-shell,
+	.dashboard-table-card {
+		box-shadow: none !important;
+		border: 1px solid #cbd5e1 !important;
+	}
+	.table-responsive {
+		max-height: none !important;
+		overflow: visible !important;
+	}
+	.print-report-meta {
+		display: block !important;
+		padding: 0 0 12px;
+		border-bottom: 2px solid #111827;
+		color: #111827 !important;
+	}
 }
 
 /* ═══════════════ DEVICES — ATTENTION INDICATORS ═══════════════ */

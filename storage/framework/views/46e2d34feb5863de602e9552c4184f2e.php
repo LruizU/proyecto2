@@ -72,7 +72,6 @@ if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>"
                        value="<?php echo e(old('name')); ?>" required>
-                <div class="form-text">Máximo 24 caracteres.</div>
                 <?php $__errorArgs = ['name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :

@@ -273,17 +273,24 @@ class PreferenciaUsuarioController extends Controller
             'username' => ['nullable', 'string', 'max:100', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
             'role' => ['required', Rule::in([Role::Admin->value, Role::Operator->value])],
+            'approval_identity' => ['nullable', Rule::in(['jefe', 'rector'])],
             'password' => ['nullable', 'confirmed', Password::min(8)],
             'group_ids' => ['nullable', 'array'],
             'group_ids.*' => ['integer', 'exists:permission_groups,id'],
         ]);
 
         DB::transaction(function () use ($data, $user): void {
+            if (! auth()->user()->isAdmin()
+                && ($data['approval_identity'] ?? null) !== $user->approval_identity) {
+                abort(403, 'Solo un administrador puede asignar la identidad de aprobación.');
+            }
+
             $attributes = [
                 'name' => $data['name'],
                 'username' => $data['username'] ?: null,
                 'email' => $data['email'],
                 'role' => $data['role'],
+                'approval_identity' => $data['approval_identity'] ?? null,
             ];
 
             if (filled($data['password'] ?? null)) {

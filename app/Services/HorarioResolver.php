@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Academia\DocenteAsistencia;
+use App\Models\Academia\CursoDet;
 use App\Models\Academia\HorarioDet;
 use App\Models\Academia\SesionBase;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -199,6 +201,91 @@ class HorarioResolver
             'retardos' => (int) ($stats->retardos ?? 0),
             'justificados' => (int) ($stats->justificados ?? 0),
         ];
+    }
+
+    public function getCursoAsistenciaGrid(
+        int $inicial,
+        int $final,
+        int $periodo,
+        string $nivel,
+        string $turno,
+        int $dia,
+        string $fechaClase,
+        ?string $sede = null,
+        ?string $edificio = null
+    ): array {
+        $fecha = Carbon::parse($fechaClase);
+        $schedules = CursoDet::query()
+            ->with(['curso.sede', 'materia', 'sede'])
+            ->where('inicial', $inicial)->where('final', $final)->where('periodo', $periodo)
+            ->where('dia', $dia)->where('activo', true)
+            ->whereHas('curso', function ($query) use ($nivel, $turno, $fecha): void {
+                $query->where('activo', true)
+                    ->where(function ($date) use ($fecha): void {
+                        $date->whereNull('desde')->orWhereDate('desde', '<=', $fecha);
+                    })
+                    ->where(function ($date) use ($fecha): void {
+                        $date->whereNull('hasta')->orWhereDate('hasta', '>=', $fecha);
+                    })
+                    ->where(function ($level) use ($nivel): void {
+                        $level->where('nivel', $nivel)->orWhereNull('nivel');
+                    })
+                    ->where(function ($shift) use ($turno): void {
+                        $shift->whereRaw('UPPER(turno) LIKE ?', [strtoupper(substr($turno, 0, 1)).'%'])
+                            ->orWhereNull('turno');
+                    });
+            })
+            ->when($sede, function ($query) use ($sede): void {
+                $query->where(function ($scope) use ($sede): void {
+                    $scope->where('id_campus', $sede)
+                        ->orWhere(function ($fallback) use ($sede): void {
+                            $fallback->whereNull('id_campus')
+                                ->whereHas('curso', fn ($course) => $course->where('id_campus', $sede));
+                        });
+                });
+            })
+            ->when($edificio, fn ($query) => $query->where('edificio', $edificio))
+            ->orderBy('id_campus')->orderBy('edificio')->orderBy('hora_inicial')
+            ->get();
+
+        $students = DB::table('alumnos_cursos')
+            ->where('inicial', $inicial)->where('final', $final)->where('periodo', $periodo)
+            ->whereIn('codigo_curso', $schedules->map(fn (CursoDet $schedule) => $schedule->curso?->clave_curso)->filter()->unique())
+            ->select('codigo_curso')->selectRaw('COUNT(DISTINCT numero_alumno) as total')
+            ->groupBy('codigo_curso')->pluck('total', 'codigo_curso');
+
+        return $schedules->map(function (CursoDet $schedule) use ($fechaClase, $students): array {
+            $course = $schedule->curso;
+            $courseCode = (string) ($course?->clave_curso ?? $schedule->codigo_curso);
+            $group = 'CURSO:'.$courseCode;
+            $professorKey = (string) ($course?->clave_profesor ?? 'CURSO');
+            $subjectKey = (string) ($schedule->clave_asignatura ?? $course?->clave_asignatura ?? $courseCode);
+            $session = 10000 + (int) $schedule->id;
+            $attendance = DocenteAsistencia::query()
+                ->where('codigo_grupo', $group)->where('clave_profesor', $professorKey)
+                ->where('clave_asignatura', $subjectKey)->where('inicial', $schedule->inicial)
+                ->where('final', $schedule->final)->where('periodo', $schedule->periodo)
+                ->where('dia', $schedule->dia)->where('sesion', $session)
+                ->whereDate('fecha', $fechaClase)->first();
+
+            return [
+                'INICIAL' => $schedule->inicial, 'FINAL' => $schedule->final, 'PERIODO' => $schedule->periodo,
+                'CODIGO_GRUPO' => $group, 'CURSO_DET_ID' => $schedule->id, 'TIPO_HORARIO' => 'CURSO',
+                'ALUMNOS_TOTAL' => (int) ($students[$courseCode] ?? 0),
+                'CLAVEPROFESOR' => $professorKey, 'CLAVEASIGNATURA' => $subjectKey,
+                'DIA' => $schedule->dia, 'SESION' => $session,
+                'ID_CAMPUS' => $schedule->id_campus ?? $course?->id_campus,
+                'SEDE_NOMBRE' => ($schedule->id_campus ? $schedule->sede?->descripcion : $course?->sede?->descripcion),
+                'EDIFICIO' => $schedule->edificio, 'AULA' => $schedule->aula,
+                'NOMBREPROFESOR' => $course?->profesor?->nombre_completo ?? $professorKey,
+                'GRADO' => $course?->nivel, 'TURNO' => $course?->turno, 'NIVEL' => $course?->nivel,
+                'CARRERA' => $course?->nivel, 'MATERIA_NOMBRE' => $course?->nombre_curso ?? 'Curso',
+                'SESION_INI' => $schedule->hora_inicial ? Carbon::parse($schedule->hora_inicial)->format('H:i') : null,
+                'SESION_FIN' => $schedule->hora_final ? Carbon::parse($schedule->hora_final)->format('H:i') : null,
+                'RECESO' => 'N', 'ASISTENCIA_ESTADO' => $attendance?->estado,
+                'ASISTENCIA_OBS' => $attendance?->observaciones, 'CAPTURADO_POR' => null, 'CAPTURADO_EN' => null,
+            ];
+        })->all();
     }
 
     /**

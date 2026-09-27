@@ -27,7 +27,7 @@ class IncidenciaController extends Controller
 
         $incidencias = Incidencia::query()
             ->with(['empleado', 'profesor', 'area', 'puesto', 'director', 'responsableArea', 'approvals'])
-            ->when(! $user->isAdmin(), function ($query) use ($user): void {
+            ->when(! $user->isAdmin() && ! $user->isRector(), function ($query) use ($user): void {
                 $employeeIds = $user->employeeAssignments()->pluck('employees.id');
                 $professorKeys = $user->professorAssignments()->pluck('profesores.clave_profesor');
 
@@ -40,7 +40,7 @@ class IncidenciaController extends Controller
                         ->orWhere('created_by_user_id', $user->id);
                 });
             })
-            ->when($user->isAdmin(), function ($query): void {
+            ->when($user->isRector(), function ($query): void {
                 $query->whereDoesntHave('approvals', fn ($approvalQuery) => $approvalQuery
                         ->where('status', 'pending')
                         ->whereNotNull('approver_employee_id'));
@@ -163,11 +163,12 @@ class IncidenciaController extends Controller
             ->where('status', 'pending')
             ->orderBy('sequence')
             ->first();
-        if ($user->isAdmin() && $pendingApproval?->approver_employee_id !== null) {
+        if ($user->isRector() && $pendingApproval?->approver_employee_id !== null) {
             abort(403, 'La incidencia aún requiere la firma del jefe directo.');
         }
 
         $canView = $user->isAdmin()
+            || $user->isRector()
             || $incidencia->created_by_user_id === $user->id
             || $user->employeeAssignments()->whereKey($incidencia->empleado_id)->exists()
             || $user->professorAssignments()->whereKey($incidencia->profesor_clave)->exists()
@@ -176,7 +177,7 @@ class IncidenciaController extends Controller
 
         abort_unless($canView, 403);
 
-        $incidencia->load(['empleado.area', 'empleado.puesto', 'profesor.area', 'profesor.puesto', 'area', 'puesto', 'director', 'responsableArea', 'creador', 'approvals.approverUser', 'approvals.approverEmployee']);
+        $incidencia->load(['empleado.area', 'empleado.puesto', 'profesor.area', 'profesor.puesto', 'area', 'puesto', 'director', 'responsableArea', 'creador', 'approvals.area', 'approvals.approverUser', 'approvals.approverEmployee']);
 
         $nombre = $incidencia->empleado?->name
             ?? trim("{$incidencia->profesor?->paterno} {$incidencia->profesor?->materno} {$incidencia->profesor?->nombre_profesor}");
@@ -254,6 +255,16 @@ class IncidenciaController extends Controller
         return Redirect::route('incidencias.index')->with('success', 'Estado de incidencia actualizado correctamente.');
     }
 
+    public function destroy(Incidencia $incidencia): RedirectResponse
+    {
+        $this->authorize('delete', $incidencia);
+
+        $incidencia->delete();
+
+        return Redirect::route('incidencias.index')
+            ->with('success', 'Incidencia eliminada correctamente.');
+    }
+
     public function markViewed(Incidencia $incidencia): RedirectResponse
     {
         $this->authorize('markViewed', $incidencia);
@@ -306,6 +317,13 @@ class IncidenciaController extends Controller
     {
         $pendingApproval = app(IncidentApprovalService::class)->getPendingApprover($incidencia);
         $approverUser = $pendingApproval?->approverEmployee?->authUser;
+
+        if (! $approverUser && $pendingApproval?->approver_employee_id === null) {
+            $approverUser = \App\Models\User::query()
+                ->where('approval_identity', 'rector')
+                ->when($pendingApproval?->approver_user_id, fn ($query, $userId) => $query->whereKey($userId))
+                ->first();
+        }
 
         if ($approverUser) {
             $approverUser->notify(new IncidenciaStatusNotification(

@@ -531,21 +531,41 @@ const CommandPalette = (() => {
 	const pages = data.pages ?? [];
 	const devices = data.devices ?? [];
 	const employees = data.employees ?? [];
+	const areas = data.areas ?? [];
+	const puestos = data.puestos ?? [];
 
-	const typeLabel = { device: 'Dispositivo', employee: 'Empleado', page: 'Acción', page_nav: 'Sección' };
+	const typeLabel = { device: 'Dispositivo', employee: 'Empleado', area: 'Área', puesto: 'Puesto', page: 'Módulo', page_nav: 'Sección' };
+	const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+		'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+	}[char]));
 
 	const buildResults = (query) => {
 		const q = query.trim().toLowerCase();
 		const groups = [];
+		const matches = (item, fields) => fields.some((field) => String(item[field] ?? '').toLowerCase().includes(q));
+		const filterItems = (items, fields) => q ? items.filter((item) => matches(item, fields)) : items;
 
-		if (!q || pages.some((p) => (p.label + ' ' + (p.keywords || '')).toLowerCase().includes(q))) {
-			groups.push({ title: 'SECCIONES Y ACCIONES', items: pages.map((p) => ({ ...p, type: 'page', icon: p.icon || 'bi-grid-1x2' })) });
+		const matchingPages = q
+			? pages.filter((p) => `${p.label} ${p.keywords || ''}`.toLowerCase().includes(q))
+			: pages;
+		if (matchingPages.length > 0) {
+			groups.push({ title: 'SECCIONES Y ACCIONES', items: matchingPages.map((p) => ({ ...p, type: 'page', icon: p.icon || 'bi-grid-1x2' })) });
 		}
-		if (!q || devices.some((d) => (d.name + ' ' + d.ip).toLowerCase().includes(q))) {
-			groups.push({ title: 'DISPOSITIVOS', items: devices.map((d) => ({ label: d.name, desc: d.ip, url: d.url, type: 'device', icon: 'bi-hdd-network' })) });
+		const matchingDevices = filterItems(devices, ['name', 'ip']);
+		if (matchingDevices.length > 0) {
+			groups.push({ title: 'DISPOSITIVOS', items: matchingDevices.map((d) => ({ label: d.name, desc: d.ip, url: d.url, type: 'device', icon: 'bi-hdd-network' })) });
 		}
-		if (!q || employees.some((e) => (e.name + ' ' + e.id + ' ' + (e.device || '')).toLowerCase().includes(q))) {
-			groups.push({ title: 'EMPLEADOS', items: employees.map((e) => ({ label: e.name, desc: '#' + e.id + (e.device ? ' - ' + e.device : ''), url: e.url, type: 'employee', icon: 'bi-person' })) });
+		const matchingEmployees = filterItems(employees, ['name', 'id', 'device']);
+		if (matchingEmployees.length > 0) {
+			groups.push({ title: 'EMPLEADOS', items: matchingEmployees.map((e) => ({ label: e.name, desc: '#' + e.id + (e.device ? ' - ' + e.device : ''), url: e.url, type: 'employee', icon: 'bi-person' })) });
+		}
+		const matchingAreas = filterItems(areas, ['name', 'ip']);
+		if (matchingAreas.length > 0) {
+			groups.push({ title: 'ÁREAS', items: matchingAreas.map((a) => ({ label: a.name, desc: a.ip, url: a.url, type: 'area', icon: 'bi-diagram-3' })) });
+		}
+		const matchingPuestos = filterItems(puestos, ['name', 'ip']);
+		if (matchingPuestos.length > 0) {
+			groups.push({ title: 'PUESTOS', items: matchingPuestos.map((p) => ({ label: p.name, desc: p.ip, url: p.url, type: 'puesto', icon: 'bi-briefcase' })) });
 		}
 
 		const flat = [];
@@ -568,11 +588,11 @@ const CommandPalette = (() => {
 			row.kind === 'header'
 				? `<div class="cmd-group-title">${row.label}</div>`
 				: `<button type="button" class="cmd-item" data-cmd-key="${row.key}">
-						<i class="bi ${row.icon || 'bi-circle'} cmd-icon"></i>
-						<span class="cmd-label">${row.label}</span>
-						<span class="cmd-desc">${typeLabel[row.type] || ''}${row.desc ? ' · ' + row.desc : ''}</span>
+						<i class="bi ${escapeHtml(row.icon || 'bi-circle')} cmd-icon"></i>
+						<span class="cmd-label">${escapeHtml(row.label)}</span>
+						<span class="cmd-desc">${escapeHtml(typeLabel[row.type] || '')}${row.desc ? ' · ' + escapeHtml(row.desc) : ''}</span>
 					</button>`
-		).join('');
+		).join('') || '<div class="cmd-empty">No se encontraron resultados con los permisos disponibles.</div>';
 	};
 
 	const open = () => {

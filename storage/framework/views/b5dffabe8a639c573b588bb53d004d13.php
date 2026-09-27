@@ -13,6 +13,11 @@
 <?php endif; ?>
 <?php $component->withAttributes(['title' => 'Asistencias','subtitle' => 'Seguimiento y revisión de marcajes de empleados y clases.','hide-title' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(false)]); ?>
     <?php $__env->slot('actions'); ?>
+        <?php if(auth()->user()->isAdmin()): ?>
+            <a href="<?php echo e(route('configuracion.asistencia.edit')); ?>" class="btn btn-outline-primary btn-sm me-2">
+                <i class="bi bi-gear me-1"></i> Configuración
+            </a>
+        <?php endif; ?>
         <small class="text-muted d-inline-flex align-items-center gap-2 flex-wrap">
             <i class="bi bi-info-circle me-1"></i>
             <strong>Estados:</strong> <span class="badge cat-blue">Entrada</span> <span class="badge cat-green">Salida</span> <span class="badge cat-orange">Descanso</span> <span class="badge cat-purple">Regreso</span> <span class="badge cat-pink">Extra entrada</span> <span class="badge cat-lavender">Extra salida</span>
@@ -34,7 +39,7 @@
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#class-attendance">Asistencia por clase</button></li>
 </ul>
 
-<div class="tab-content">
+<div class="tab-content attendance-page">
 <div class="tab-pane fade show active" id="employee-attendance">
 
 <div class="card shadow-sm mb-3">

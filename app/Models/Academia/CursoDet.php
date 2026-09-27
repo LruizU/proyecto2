@@ -23,6 +23,17 @@ class CursoDet extends Model
         'horas_practica',
         'tipo',
         'activo',
+        'id_escuela',
+        'inicial',
+        'final',
+        'periodo',
+        'codigo_curso',
+        'dia',
+        'hora_inicial',
+        'hora_final',
+        'id_campus',
+        'edificio',
+        'aula',
     ];
 
     protected $casts = [
@@ -31,6 +42,10 @@ class CursoDet extends Model
         'horas_teoria' => 'integer',
         'horas_practica' => 'integer',
         'activo' => 'boolean',
+        'inicial' => 'integer',
+        'final' => 'integer',
+        'periodo' => 'integer',
+        'dia' => 'integer',
     ];
 
     public function curso(): BelongsTo
@@ -41,6 +56,11 @@ class CursoDet extends Model
     public function materia(): BelongsTo
     {
         return $this->belongsTo(Materia::class, 'clave_asignatura', 'clave_asignatura');
+    }
+
+    public function sede(): BelongsTo
+    {
+        return $this->belongsTo(Sede::class, 'id_campus', 'id_campus');
     }
 
     public function scopeActivo($query)

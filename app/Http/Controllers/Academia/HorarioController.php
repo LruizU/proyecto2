@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Academia;
 use App\Http\Controllers\Controller;
 use App\Models\Academia\DocenteAsistencia;
 use App\Models\Academia\HorarioDet;
+use App\Models\Academia\CursoDet;
 use App\Models\Academia\Sede;
 use App\Models\Academia\SesionBase;
 use App\Services\AttendanceCaptureAuthorization;
@@ -32,10 +33,14 @@ class HorarioController extends Controller
         // Filtros
         $nivel = $request->get('nivel');
         $turno = $request->get('turno');
-        $dia = $request->filled('dia')
+        $tipoHorario = in_array($request->get('tipo_horario'), ['CLASE', 'CURSO'], true)
+            ? $request->get('tipo_horario')
+            : 'TODOS';
+        $esAdministrador = $request->user()->isAdmin();
+        $dia = $esAdministrador && $request->filled('dia')
             ? (int) $request->get('dia')
             : now()->dayOfWeekIso;
-        $fecha = $request->filled('fecha')
+        $fecha = $esAdministrador && $request->filled('fecha')
             ? (string) $request->get('fecha')
             : now()->toDateString();
         $fechaCarbon = Carbon::parse($fecha);
@@ -76,7 +81,8 @@ class HorarioController extends Controller
         }
 
         if ($nivel && $turno && $scopeAllowed) {
-            $edificios = HorarioDet::query()
+            $edificiosClases = $tipoHorario !== 'CURSO'
+                ? HorarioDet::query()
                 ->where('horarios_det.inicial', $ciclo->inicial)
                 ->where('horarios_det.final', $ciclo->final)
                 ->where('horarios_det.periodo', $ciclo->periodo)
@@ -101,31 +107,65 @@ class HorarioController extends Controller
                 ->whereRaw('UPPER(g.turno) LIKE ?', [strtoupper(substr($turno, 0, 1)).'%'])
                 ->distinct()
                 ->orderBy('horarios_det.edificio')
-                ->pluck('horarios_det.edificio');
+                ->pluck('horarios_det.edificio')
+                : collect();
+            $edificiosCursos = $tipoHorario !== 'CLASE'
+                ? $this->horarioResolver->getCursoAsistenciaGrid(
+                    $ciclo->inicial, $ciclo->final, $ciclo->periodo,
+                    $nivel, $turno, $dia, $fecha, $sede
+                )
+                : [];
+            $edificios = $edificiosClases->merge(collect($edificiosCursos)->pluck('EDIFICIO'))
+                ->filter()->unique()->sort()->values();
         }
 
         $horarios = [];
         $stats = ['total_clases' => 0, 'capturadas' => 0, 'presentes' => 0, 'ausentes' => 0, 'retardos' => 0, 'justificados' => 0];
 
         if ($nivel && $turno && $scopeAllowed) {
-            $horarios = $this->horarioResolver->getClaseAsistenciaGrid(
+            $horariosClases = $tipoHorario !== 'CURSO'
+                ? $this->horarioResolver->getClaseAsistenciaGrid(
                 $ciclo->inicial, $ciclo->final, $ciclo->periodo,
                 $nivel, $turno, $dia, $fecha, $sede, $edificio
-            );
-            $horarios = $this->captureAuthorization->filterGrid(
+                )
+                : [];
+            $horariosClases = $this->captureAuthorization->filterGrid(
                 $request->user(),
-                $horarios,
+                $horariosClases,
                 $ciclo->inicial,
                 $ciclo->final,
                 $ciclo->periodo,
             );
+            $horariosCursos = $tipoHorario !== 'CLASE'
+                ? $this->horarioResolver->getCursoAsistenciaGrid(
+                    $ciclo->inicial, $ciclo->final, $ciclo->periodo,
+                    $nivel, $turno, $dia, $fecha, $sede, $edificio
+                )
+                : [];
+            $horariosCursos = $this->captureAuthorization->filterGrid(
+                $request->user(),
+                $horariosCursos,
+                $ciclo->inicial,
+                $ciclo->final,
+                $ciclo->periodo,
+            );
+            $horarios = array_merge($horariosClases, $horariosCursos);
+            usort($horarios, fn (array $left, array $right): int => [
+                (string) ($left['ID_CAMPUS'] ?? ''),
+                (string) ($left['EDIFICIO'] ?? ''),
+                (int) ($left['DIA'] ?? 0),
+                (int) ($left['SESION'] ?? 0),
+            ] <=> [
+                (string) ($right['ID_CAMPUS'] ?? ''),
+                (string) ($right['EDIFICIO'] ?? ''),
+                (int) ($right['DIA'] ?? 0),
+                (int) ($right['SESION'] ?? 0),
+            ]);
             $stats = $this->horarioResolver->getClaseAsistenciaStats(
                 $ciclo->inicial, $ciclo->final, $ciclo->periodo,
                 $nivel, $turno, $dia, $fecha, $sede, $edificio
             );
-            if (! $request->user()->isAdmin()) {
-                $stats = $this->statsFromGrid($horarios);
-            }
+            $stats = $this->statsFromGrid($horarios);
         }
 
         return view('academia.horarios.clase', [
@@ -136,7 +176,8 @@ class HorarioController extends Controller
             'stats' => $stats,
             'sedes' => $sedes,
             'edificios' => $edificios,
-            'filtros' => compact('nivel', 'turno', 'dia', 'fecha', 'sede', 'edificio'),
+            'filtros' => compact('nivel', 'turno', 'tipoHorario', 'dia', 'fecha', 'sede', 'edificio'),
+            'esAdministrador' => $esAdministrador,
             'diasSemana' => [
                 1 => 'Lunes', 2 => 'Martes', 3 => 'Miércoles',
                 4 => 'Jueves', 5 => 'Viernes', 6 => 'Sábado', 7 => 'Domingo',
@@ -150,7 +191,7 @@ class HorarioController extends Controller
             'inicial' => ['required', 'integer'],
             'final' => ['required', 'integer'],
             'periodo' => ['required', 'integer'],
-            'horario_id' => ['required', 'integer'],
+            'horario_id' => ['nullable', 'integer', 'required_without:curso_det_id'],
             'codigo_grupo' => ['required', 'string', 'max:50'],
             'clave_profesor' => ['required', 'string', 'max:50'],
             'clave_asignatura' => ['required', 'string', 'max:20'],
@@ -159,10 +200,17 @@ class HorarioController extends Controller
             'fecha' => ['required', 'date'],
             'estado' => ['required', 'in:PRESENTE,AUSENTE,RETARDO,JUSTIFICADO'],
             'observaciones' => ['nullable', 'string', 'max:500'],
+            'tipo_horario' => ['nullable', 'in:CURSO'],
+            'curso_det_id' => ['nullable', 'integer'],
         ]);
 
-        $horario = HorarioDet::query()->findOrFail($data['horario_id'] ?? 0);
-        abort_unless($this->captureAuthorization->canCaptureSchedule($request->user(), $horario), 403);
+        if (($data['tipo_horario'] ?? null) === 'CURSO') {
+            $courseSchedule = CursoDet::query()->with('curso')->findOrFail($data['curso_det_id'] ?? 0);
+            abort_unless($this->captureAuthorization->canCaptureCourse($request->user(), $courseSchedule), 403);
+        } else {
+            $horario = HorarioDet::query()->findOrFail($data['horario_id'] ?? 0);
+            abort_unless($this->captureAuthorization->canCaptureSchedule($request->user(), $horario), 403);
+        }
 
         DocenteAsistencia::updateOrCreate(
             collect($data)->only([

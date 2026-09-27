@@ -25,7 +25,7 @@
         .metadata { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; font-size: 12px; }
         .metadata strong { display: block; margin-bottom: 3px; }
         .justification { min-height: 85px; white-space: pre-wrap; }
-        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 65px; text-align: center; font-size: 12px; }
+        .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 65px; text-align: center; font-size: 12px; }
         .signature { border-top: 1px solid #111; padding-top: 7px; min-height: 48px; }
         .actions { width: 210mm; margin: 12px auto; text-align: right; }
         button { border: 1px solid #555; background: #fff; border-radius: 4px; padding: 8px 14px; cursor: pointer; }
@@ -70,7 +70,7 @@
 
     <table>
         <tr>
-            <th>Nombre:</th>
+            <th>Solicitante:</th>
             <td><?php echo e($nombre ?: '—'); ?></td>
         </tr>
         <tr>
@@ -118,8 +118,8 @@
     </table>
 
     <div class="metadata">
-        <div><strong>Responsable de área</strong><?php echo e($incidencia->responsableArea?->name ?? 'Pendiente'); ?></div>
-        <div><strong>Jefe directo / director</strong><?php echo e($incidencia->director?->name ?? 'Pendiente'); ?></div>
+        <div><strong>Responsable de área / jefe directo</strong><?php echo e($incidencia->responsableArea?->name ?? 'Pendiente'); ?></div>
+        <div><strong>Jefe directo adicional</strong><?php echo e($incidencia->director?->name ?? 'No asignado'); ?></div>
         <div><strong>Estado</strong><?php echo e(ucfirst($incidencia->estado)); ?></div>
     </div>
 
@@ -128,7 +128,10 @@
             <?php $__empty_1 = true; $__currentLoopData = $incidencia->approvals->sortBy('sequence'); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $approval): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                 <?php ($esRector = $approval->approver_employee_id === null); ?>
                 <div style="margin-bottom: 8px;">
-                    <strong><?php echo e($esRector ? 'Rector / autorización institucional' : 'Jefe directo / autorización de área'); ?></strong>:
+                    <strong><?php echo e($esRector ? 'Rectoría / autorización institucional' : 'Jefe directo '.($approval->sequence). ' / autorización de área'); ?></strong>:
+                    <?php if($approval->area): ?>
+                        <span>(<?php echo e($approval->area->descripcion ?: $approval->area->identificador); ?>)</span>
+                    <?php endif; ?>
                     <?php echo e($approval->approverEmployee?->name ?? ($approval->approverUser?->name ?? 'Pendiente de asignar')); ?>
 
                     — <?php echo e($approval->status === 'approved' ? 'Firmada' : ($approval->status === 'rejected' ? 'Rechazada' : 'Pendiente')); ?>
@@ -142,9 +145,11 @@
     </table>
 
     <section class="signatures">
-        <div><div class="signature"><?php echo e($incidencia->creador?->name ?? $nombre); ?><br>Solicitante</div></div>
-        <div><div class="signature"><?php echo e($incidencia->director?->name ?? 'Jefe directo'); ?><br>Jefe directo</div></div>
-        <div><div class="signature"><?php echo e($incidencia->autorizadoPor?->name ?? 'Pendiente'); ?><br>Rector / autorización institucional</div></div>
+        <?php ($jefesDirectos = $incidencia->approvals->whereNotNull('approver_employee_id')->sortBy('sequence')->values()); ?>
+        <div><div class="signature"><?php echo e($nombre ?: 'Pendiente'); ?><br>Solicitante</div></div>
+        <div><div class="signature"><?php echo e($incidencia->responsableArea?->name ?? 'Pendiente'); ?><br>Jefe directo 1 / responsable de área</div></div>
+        <div><div class="signature"><?php echo e($jefesDirectos->get(0)?->approverEmployee?->name ?? 'No asignado'); ?><br>Jefe directo 2</div></div>
+        <div><div class="signature"><?php echo e($incidencia->autorizadoPor?->name ?? 'Pendiente'); ?><br>Rectoría</div></div>
     </section>
 </main>
 </body>

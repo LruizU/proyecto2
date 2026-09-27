@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use App\Models\SystemSetting;
 
 class Attendance extends Model
 {
@@ -140,6 +141,13 @@ class Attendance extends Model
 
         $horario = $this->obtenerHorarioLaboral();
         $horaBase = Carbon::parse($horario->hora_entrada);
+        $adjustment = AttendanceSpecialRule::minutesFor(
+            $this->employee_id,
+            $this->recorded_at->toDateString(),
+        );
+        if ($adjustment > 0) {
+            $horaBase->subMinutes($adjustment);
+        }
         $entrada = Carbon::createFromTime(
             $this->hora_entrada->hour,
             $this->hora_entrada->minute,
@@ -147,6 +155,11 @@ class Attendance extends Model
         );
 
         $diferenciaMinutos = $entrada->diffInMinutes($horaBase);
+
+        $tolerancia = SystemSetting::integer('attendance.grace_minutes', 10);
+        if ($entrada->greaterThan($horaBase) && $diferenciaMinutos <= $tolerancia) {
+            return 'A tiempo';
+        }
 
         if ($entrada->greaterThan($horaBase)) {
             return "llegó tarde en {$diferenciaMinutos} min";

@@ -10,6 +10,8 @@ use App\Models\Device;
 use App\Models\Employee;
 use App\Models\HorarioLaboral;
 use App\Models\Incidencia;
+use App\Models\SystemSetting;
+use App\Models\AttendanceSpecialRule;
 use App\Services\AttendanceObservationService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -69,13 +71,14 @@ class AttendanceController extends Controller
             ->where('activo', true)
             ->get()
             ->groupBy('employee_id');
+        $graceMinutes = SystemSetting::integer('attendance.grace_minutes', 10);
 
         $incidenciasMap = $incidencias
             ->groupBy(fn (Incidencia $incidencia): string => $incidencia->empleado_id.':'.optional($incidencia->fecha_falta_programada)->format('Y-m-d'));
 
         $dailyRows = $rawAttendances
             ->groupBy(fn (Attendance $attendance) => ($attendance->employee?->id ?? 'user-'.$attendance->user_id).':'.$attendance->recorded_at->toDateString())
-            ->map(function ($records) use ($horariosMap, $incidenciasMap) {
+            ->map(function ($records) use ($horariosMap, $incidenciasMap, $graceMinutes) {
                 $first = $records->first();
                 $punches = $records->groupBy(fn (Attendance $attendance) => $attendance->punchStatus())
                     ->map(fn ($items) => $items->sortBy('recorded_at')->first());
@@ -87,6 +90,10 @@ class AttendanceController extends Controller
                 $horario = $horarios->firstWhere('dia_semana', $diaSemana);
                 $horaEntradaBase = $horario?->hora_entrada?->format('H:i') ?? '08:00';
                 $horaSalidaBase = $horario?->hora_salida?->format('H:i') ?? '17:00';
+                $specialMinutes = AttendanceSpecialRule::minutesFor($employeeId, $first->recorded_at->toDateString());
+                if ($specialMinutes > 0) {
+                    $horaEntradaBase = Carbon::parse($horaEntradaBase)->subMinutes($specialMinutes)->format('H:i');
+                }
                 $entrada = $punches->get(0);
                 $salida = $punches->get(1);
                 $incidencias = $incidenciasMap->get($first->employee_id.':'.$first->recorded_at->toDateString(), collect());
@@ -102,8 +109,8 @@ class AttendanceController extends Controller
                     'observation_attendance_id' => $records->sortByDesc('recorded_at')->first()?->id,
                     'llegada_resumen' => $this->buildPunchSummary($punches, [0 => 'Entrada', 4 => 'Extra entrada']),
                     'salida_resumen' => $this->buildPunchSummary($punches, [1 => 'Salida', 5 => 'Extra salida']),
-                    'observacion_llegada' => $this->buildDeviationLabel($entrada?->recorded_at, $horaEntradaBase, 'llegó'),
-                    'observacion_salida' => $this->buildDeviationLabel($salida?->recorded_at, $horaSalidaBase, 'salió'),
+                    'observacion_llegada' => $this->buildDeviationLabel($entrada?->recorded_at, $horaEntradaBase, 'llegó', $graceMinutes),
+                    'observacion_salida' => $this->buildDeviationLabel($salida?->recorded_at, $horaSalidaBase, 'salió', 0),
                     'horario_entrada_base' => $horaEntradaBase,
                     'horario_salida_base' => $horaSalidaBase,
                     'tiene_horario' => $horario !== null,
@@ -127,6 +134,10 @@ class AttendanceController extends Controller
                 ->firstWhere('dia_semana', $incidencia->fecha_falta_programada->dayOfWeekIso);
             $horaEntradaBase = $horario?->hora_entrada?->format('H:i') ?? '08:00';
             $horaSalidaBase = $horario?->hora_salida?->format('H:i') ?? '17:00';
+            $specialMinutes = AttendanceSpecialRule::minutesFor($employee->id, $incidencia->fecha_falta_programada->toDateString());
+            if ($specialMinutes > 0) {
+                $horaEntradaBase = Carbon::parse($horaEntradaBase)->subMinutes($specialMinutes)->format('H:i');
+            }
 
             $dailyRows->put($key, (object) [
                 'date' => $incidencia->fecha_falta_programada->toDateString(),
@@ -485,7 +496,7 @@ class AttendanceController extends Controller
         return $summary;
     }
 
-    private function buildDeviationLabel(?\Carbon\Carbon $recordedAt, string $baseTime, string $verb): string
+    private function buildDeviationLabel(?\Carbon\Carbon $recordedAt, string $baseTime, string $verb, int $graceMinutes = 0): string
     {
         if (! $recordedAt) {
             return '—';
@@ -498,6 +509,10 @@ class AttendanceController extends Controller
             $recordedAt->second,
         );
         $minutes = $actual->diffInMinutes($base);
+
+        if ($actual->greaterThan($base) && $minutes <= $graceMinutes) {
+            return 'A tiempo';
+        }
 
         if ($minutes === 0) {
             return 'A tiempo';

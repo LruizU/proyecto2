@@ -272,9 +272,9 @@ $message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
 if (isset($__messageOriginal)) { $message = $__messageOriginal; }
 endif;
 unset($__errorArgs, $__bag); ?>"
-                                           value="<?php echo e(old('name', $employee->name)); ?>" maxlength="24" required
+                                           value="<?php echo e(old('name', $employee->name)); ?>" required
                                            aria-describedby="name-help" autocomplete="name">
-                                    <div id="name-help" class="form-text">Máximo 24 caracteres. Se refleja en todos los checadores tras sincronizar.</div>
+                                    <div id="name-help" class="form-text">El nombre se refleja en todos los checadores tras sincronizar.</div>
                                     <?php $__errorArgs = ['name'];
 $__bag = $errors->getBag($__errorArgs[1] ?? 'default');
 if ($__bag->has($__errorArgs[0])) :

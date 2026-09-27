@@ -40,6 +40,8 @@
                     <tr>
                         <th>ID de área</th>
                         <th>Descripción</th>
+                        <th>Depende de</th>
+                        <th>Jefe de aprobación</th>
                         <th>Encargado</th>
                         <th>Puestos</th>
                         <th class="text-end">Acciones</th>
@@ -50,6 +52,8 @@
                         <tr>
                             <td><span class="fw-semibold"><?php echo e($area->identificador); ?></span></td>
                             <td><?php echo e($area->descripcion ?? '—'); ?></td>
+                            <td><?php echo e($area->parent?->identificador ?? 'Rectoría'); ?></td>
+                            <td><?php echo e($area->head?->name ?? 'Sin jefe'); ?></td>
                             <td><?php echo e($area->empleadoResponsable?->name ?? '—'); ?></td>
                             <td><?php echo e($area->puestos->count()); ?></td>
                             <td class="text-end">
@@ -68,7 +72,7 @@
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No hay áreas registradas.</td>
+                            <td colspan="7" class="text-center text-muted py-4">No hay áreas registradas.</td>
                         </tr>
                     <?php endif; ?>
                 </tbody>

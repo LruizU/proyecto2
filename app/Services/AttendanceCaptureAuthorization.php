@@ -8,6 +8,7 @@ use App\Models\Academia\AttendanceCaptureAssignment;
 use App\Models\Academia\Ciclo;
 use App\Models\Academia\Grupo;
 use App\Models\Academia\HorarioDet;
+use App\Models\Academia\CursoDet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -44,6 +45,25 @@ class AttendanceCaptureAuthorization
         return $this->assignmentsForCycle($user, $horario->inicial, $horario->final, $horario->periodo)
             ->contains(fn (AttendanceCaptureAssignment $assignment): bool => ($assignment->nivel === null || $assignment->nivel === $grupo->nivel)
                 && ($assignment->id_campus === null || (string) $assignment->id_campus === (string) $horario->id_campus)
+            );
+    }
+
+    public function canCaptureCourse(User $user, CursoDet $schedule): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        $course = $schedule->curso;
+
+        return $course !== null
+            && $this->canCaptureFilter(
+                $user,
+                (string) $course->nivel,
+                $schedule->id_campus ?: $course->id_campus,
+                (int) $schedule->inicial,
+                (int) $schedule->final,
+                (int) $schedule->periodo,
             );
     }
 

@@ -25,6 +25,28 @@
                     <input type="text" id="descripcion" name="descripcion" class="form-control" value="{{ old('descripcion', $area->descripcion) }}">
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label" for="parent_id">Área superior</label>
+                    <select id="parent_id" name="parent_id" class="form-select">
+                        <option value="">Sin área superior (nivel rectoría)</option>
+                        @foreach ($areas as $parent)
+                            <option value="{{ $parent->id }}" @selected(old('parent_id', $area->parent_id) == $parent->id)>
+                                {{ $parent->identificador }} — {{ $parent->descripcion ?: $parent->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="head_employee_id">Jefe que autoriza</label>
+                    <select id="head_employee_id" name="head_employee_id" class="form-select">
+                        <option value="">Sin jefe asignado</option>
+                        @foreach ($empleados as $empleado)
+                            <option value="{{ $empleado->id }}" @selected(old('head_employee_id', $area->head_employee_id) == $empleado->id)>
+                                {{ $empleado->name }} ({{ $empleado->user_id }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label" for="empleado_responsable_id">Encargado</label>
                     <select id="empleado_responsable_id" name="empleado_responsable_id" class="form-select">
                         <option value="">Sin responsable</option>

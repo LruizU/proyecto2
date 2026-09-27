@@ -121,6 +121,30 @@ endif;
 unset($__errorArgs, $__bag); ?>
                         </div>
                         <div class="col-md-6">
+                            <label for="approval_identity" class="form-label">Identidad de aprobación de incidencias</label>
+                            <select id="approval_identity" name="approval_identity" class="form-select <?php $__errorArgs = ['approval_identity'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>">
+                                <option value="" <?php if(old('approval_identity', $user->approval_identity) === null || old('approval_identity', $user->approval_identity) === ''): echo 'selected'; endif; ?>>Sin identidad</option>
+                                <option value="jefe" <?php if(old('approval_identity', $user->approval_identity) === 'jefe'): echo 'selected'; endif; ?>>Jefe de área</option>
+                                <option value="rector" <?php if(old('approval_identity', $user->approval_identity) === 'rector'): echo 'selected'; endif; ?>>Rector</option>
+                            </select>
+                            <div class="form-text">Solo el rector puede autorizar definitivamente una incidencia. El jefe solo libera el paso hacia rector.</div>
+                            <?php $__errorArgs = ['approval_identity'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?><div class="invalid-feedback"><?php echo e($message); ?></div><?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">Perfil vinculado</label>
                             <div class="form-control bg-body-secondary">
                                 <?php if($user->employee): ?>
@@ -180,6 +204,7 @@ unset($__errorArgs, $__bag); ?>
                     <input type="hidden" name="username" value="<?php echo e($user->username); ?>">
                     <input type="hidden" name="email" value="<?php echo e($user->email); ?>">
                     <input type="hidden" name="role" value="<?php echo e($user->role?->value ?? $user->role); ?>">
+                    <input type="hidden" name="approval_identity" value="<?php echo e($user->approval_identity); ?>">
                     <?php $__empty_1 = true; $__currentLoopData = $groups; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $group): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <label class="d-flex align-items-start gap-2 border rounded p-3 mb-2">
                             <input class="form-check-input mt-1" type="checkbox" name="group_ids[]" value="<?php echo e($group->id); ?>" <?php if(in_array($group->id, old('group_ids', $assignedGroupIds), true)): echo 'checked'; endif; ?>>

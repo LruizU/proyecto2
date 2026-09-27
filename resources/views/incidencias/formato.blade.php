@@ -25,7 +25,7 @@
         .metadata { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 18px; font-size: 12px; }
         .metadata strong { display: block; margin-bottom: 3px; }
         .justification { min-height: 85px; white-space: pre-wrap; }
-        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 65px; text-align: center; font-size: 12px; }
+        .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 65px; text-align: center; font-size: 12px; }
         .signature { border-top: 1px solid #111; padding-top: 7px; min-height: 48px; }
         .actions { width: 210mm; margin: 12px auto; text-align: right; }
         button { border: 1px solid #555; background: #fff; border-radius: 4px; padding: 8px 14px; cursor: pointer; }
@@ -67,7 +67,7 @@
 
     <table>
         <tr>
-            <th>Nombre:</th>
+            <th>Solicitante:</th>
             <td>{{ $nombre ?: '—' }}</td>
         </tr>
         <tr>
@@ -113,8 +113,8 @@
     </table>
 
     <div class="metadata">
-        <div><strong>Responsable de área</strong>{{ $incidencia->responsableArea?->name ?? 'Pendiente' }}</div>
-        <div><strong>Jefe directo / director</strong>{{ $incidencia->director?->name ?? 'Pendiente' }}</div>
+        <div><strong>Responsable de área / jefe directo</strong>{{ $incidencia->responsableArea?->name ?? 'Pendiente' }}</div>
+        <div><strong>Jefe directo adicional</strong>{{ $incidencia->director?->name ?? 'No asignado' }}</div>
         <div><strong>Estado</strong>{{ ucfirst($incidencia->estado) }}</div>
     </div>
 
@@ -123,7 +123,10 @@
             @forelse($incidencia->approvals->sortBy('sequence') as $approval)
                 @php($esRector = $approval->approver_employee_id === null)
                 <div style="margin-bottom: 8px;">
-                    <strong>{{ $esRector ? 'Rector / autorización institucional' : 'Jefe directo / autorización de área' }}</strong>:
+                    <strong>{{ $esRector ? 'Rectoría / autorización institucional' : 'Jefe directo '.($approval->sequence). ' / autorización de área' }}</strong>:
+                    @if($approval->area)
+                        <span>({{ $approval->area->descripcion ?: $approval->area->identificador }})</span>
+                    @endif
                     {{ $approval->approverEmployee?->name ?? ($approval->approverUser?->name ?? 'Pendiente de asignar') }}
                     — {{ $approval->status === 'approved' ? 'Firmada' : ($approval->status === 'rejected' ? 'Rechazada' : 'Pendiente') }}
                     @if($approval->approved_at) ({{ $approval->approved_at->format('d/m/Y H:i') }}) @endif
@@ -135,9 +138,11 @@
     </table>
 
     <section class="signatures">
-        <div><div class="signature">{{ $incidencia->creador?->name ?? $nombre }}<br>Solicitante</div></div>
-        <div><div class="signature">{{ $incidencia->director?->name ?? 'Jefe directo' }}<br>Jefe directo</div></div>
-        <div><div class="signature">{{ $incidencia->autorizadoPor?->name ?? 'Pendiente' }}<br>Rector / autorización institucional</div></div>
+        @php($jefesDirectos = $incidencia->approvals->whereNotNull('approver_employee_id')->sortBy('sequence')->values())
+        <div><div class="signature">{{ $nombre ?: 'Pendiente' }}<br>Solicitante</div></div>
+        <div><div class="signature">{{ $incidencia->responsableArea?->name ?? 'Pendiente' }}<br>Jefe directo 1 / responsable de área</div></div>
+        <div><div class="signature">{{ $jefesDirectos->get(0)?->approverEmployee?->name ?? 'No asignado' }}<br>Jefe directo 2</div></div>
+        <div><div class="signature">{{ $incidencia->autorizadoPor?->name ?? 'Pendiente' }}<br>Rectoría</div></div>
     </section>
 </main>
 </body>

@@ -82,8 +82,10 @@ class Handler extends ExceptionHandler
                 return response()->json(['message' => 'El recurso solicitado no existe.'], 404);
             }
 
-            return response()->view('errors.500', [
-                'message' => 'El recurso solicitado no existe o ya no está disponible.',
+            return response()->view('errors.404', [
+                'code' => 404,
+                'title' => 'Página no encontrada',
+                'description' => 'El recurso solicitado no existe o ya no está disponible.',
             ], 404);
         }
 

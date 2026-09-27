@@ -22,6 +22,8 @@
                     <tr>
                         <th>ID de área</th>
                         <th>Descripción</th>
+                        <th>Depende de</th>
+                        <th>Jefe de aprobación</th>
                         <th>Encargado</th>
                         <th>Puestos</th>
                         <th class="text-end">Acciones</th>
@@ -32,6 +34,8 @@
                         <tr>
                             <td><span class="fw-semibold">{{ $area->identificador }}</span></td>
                             <td>{{ $area->descripcion ?? '—' }}</td>
+                            <td>{{ $area->parent?->identificador ?? 'Rectoría' }}</td>
+                            <td>{{ $area->head?->name ?? 'Sin jefe' }}</td>
                             <td>{{ $area->empleadoResponsable?->name ?? '—' }}</td>
                             <td>{{ $area->puestos->count() }}</td>
                             <td class="text-end">
@@ -50,7 +54,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-4">No hay áreas registradas.</td>
+                            <td colspan="7" class="text-center text-muted py-4">No hay áreas registradas.</td>
                         </tr>
                     @endforelse
                 </tbody>

@@ -292,7 +292,7 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee): RedirectResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:24'],
+            'name' => ['required', 'string'],
             'area_id' => ['nullable', 'exists:areas,id'],
             'puesto_id' => ['nullable', 'exists:puestos,id'],
             'auth_user_id' => ['nullable', 'exists:users,id'],

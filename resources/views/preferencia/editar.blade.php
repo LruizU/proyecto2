@@ -47,6 +47,16 @@
                             @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
+                            <label for="approval_identity" class="form-label">Identidad de aprobación de incidencias</label>
+                            <select id="approval_identity" name="approval_identity" class="form-select @error('approval_identity') is-invalid @enderror">
+                                <option value="" @selected(old('approval_identity', $user->approval_identity) === null || old('approval_identity', $user->approval_identity) === '')>Sin identidad</option>
+                                <option value="jefe" @selected(old('approval_identity', $user->approval_identity) === 'jefe')>Jefe de área</option>
+                                <option value="rector" @selected(old('approval_identity', $user->approval_identity) === 'rector')>Rector</option>
+                            </select>
+                            <div class="form-text">Solo el rector puede autorizar definitivamente una incidencia. El jefe solo libera el paso hacia rector.</div>
+                            @error('approval_identity')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label">Perfil vinculado</label>
                             <div class="form-control bg-body-secondary">
                                 @if($user->employee)
@@ -90,6 +100,7 @@
                     <input type="hidden" name="username" value="{{ $user->username }}">
                     <input type="hidden" name="email" value="{{ $user->email }}">
                     <input type="hidden" name="role" value="{{ $user->role?->value ?? $user->role }}">
+                    <input type="hidden" name="approval_identity" value="{{ $user->approval_identity }}">
                     @forelse($groups as $group)
                         <label class="d-flex align-items-start gap-2 border rounded p-3 mb-2">
                             <input class="form-check-input mt-1" type="checkbox" name="group_ids[]" value="{{ $group->id }}" @checked(in_array($group->id, old('group_ids', $assignedGroupIds), true))>

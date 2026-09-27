@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Incidencia;
 use App\Models\IncidenciaApproval;
+use App\Models\User;
 use Illuminate\Support\Collection;
 
 class IncidentApprovalService
@@ -38,11 +39,15 @@ class IncidentApprovalService
             $currentArea = $currentArea->parent()->first();
         }
 
+        $rector = User::query()
+            ->where('approval_identity', 'rector')
+            ->first();
+
         $approvers->push([
             'sequence' => $sequence,
             'area_id' => null,
             'approver_employee_id' => null,
-            'approver_user_id' => null,
+            'approver_user_id' => $rector?->id,
             'status' => 'pending',
         ]);
 

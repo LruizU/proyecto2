@@ -31,6 +31,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'approval_identity',
         'type',
     ];
 
@@ -58,6 +59,16 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === Role::Admin;
+    }
+
+    public function isJefe(): bool
+    {
+        return $this->approval_identity === 'jefe';
+    }
+
+    public function isRector(): bool
+    {
+        return $this->approval_identity === 'rector';
     }
 
     /**

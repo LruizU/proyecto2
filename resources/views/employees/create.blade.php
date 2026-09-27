@@ -35,7 +35,6 @@
                 <label for="name" class="form-label">Nombre completo</label>
                 <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror"
                        value="{{ old('name') }}" required>
-                <div class="form-text">Máximo 24 caracteres.</div>
                 @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 

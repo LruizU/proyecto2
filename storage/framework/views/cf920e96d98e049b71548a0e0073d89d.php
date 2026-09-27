@@ -43,6 +43,29 @@
                     <input type="text" id="descripcion" name="descripcion" class="form-control" value="<?php echo e(old('descripcion', $area->descripcion)); ?>">
                 </div>
                 <div class="col-md-6">
+                    <label class="form-label" for="parent_id">Área superior</label>
+                    <select id="parent_id" name="parent_id" class="form-select">
+                        <option value="">Sin área superior (nivel rectoría)</option>
+                        <?php $__currentLoopData = $areas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $parent): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($parent->id); ?>" <?php if(old('parent_id', $area->parent_id) == $parent->id): echo 'selected'; endif; ?>>
+                                <?php echo e($parent->identificador); ?> — <?php echo e($parent->descripcion ?: $parent->name); ?>
+
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label" for="head_employee_id">Jefe que autoriza</label>
+                    <select id="head_employee_id" name="head_employee_id" class="form-select">
+                        <option value="">Sin jefe asignado</option>
+                        <?php $__currentLoopData = $empleados; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $empleado): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($empleado->id); ?>" <?php if(old('head_employee_id', $area->head_employee_id) == $empleado->id): echo 'selected'; endif; ?>>
+                                <?php echo e($empleado->name); ?> (<?php echo e($empleado->user_id); ?>)
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    </select>
+                </div>
+                <div class="col-md-6">
                     <label class="form-label" for="empleado_responsable_id">Encargado</label>
                     <select id="empleado_responsable_id" name="empleado_responsable_id" class="form-select">
                         <option value="">Sin responsable</option>
