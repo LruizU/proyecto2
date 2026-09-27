@@ -1117,6 +1117,252 @@
   </div>
 </section>
 
+{{-- ========== CARGA ACADÉMICA POR MAESTRO ========== --}}
+<section aria-labelledby="carga-maestro-heading" class="mb-4">
+  <div class="section-heading mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 id="carga-maestro-heading" class="h6 fw-bold mb-0">Carga Académica Total por Maestro</h2>
+      <span class="small text-secondary">Detalle de horas clase, materia y cursos por docente</span>
+    </div>
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Ciclo {{ $ciclo->label }}</span>
+  </div>
+
+  <div class="card shadow-sm border dashboard-table-card">
+    <div class="card-header bg-surface-1 border-bottom p-3">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+        <div class="d-flex align-items-center gap-2">
+          <div class="p-2 rounded d-inline-flex" style="background:rgba(59,130,246,0.12);color:var(--cat-blue)">
+            <i class="bi bi-person-workspace fs-5"></i>
+          </div>
+          <div>
+            <h3 class="h6 fw-bold mb-0">Distribución de Carga Horaria Docente</h3>
+            <span class="small text-secondary">Horas de clase, materia y cursos por profesor</span>
+          </div>
+        </div>
+        <span class="badge bg-surface-2 text-secondary border px-2 py-1 js-table-count-badge">
+          {{ number_format($cargaPorMaestro->count()) }} maestros
+        </span>
+      </div>
+
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 border-top">
+        <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 200px;">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-surface-2 border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control form-control-sm border-start-0 js-table-search" data-table-id="carga-maestro-table" placeholder="Buscar maestro, nivel, turno o sede..." aria-label="Buscar maestro">
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <div class="d-flex align-items-center gap-1">
+            <label class="small text-muted mb-0 me-1 d-none d-sm-inline">Ver:</label>
+            <select class="form-select form-select-sm js-table-size" data-table-id="carga-maestro-table" style="width: 70px;" aria-label="Cantidad de filas">
+              <option value="20" selected>20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="btn-group btn-group-sm">
+            <button type="button" class="btn btn-outline-success js-export-excel" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}" title="Exportar a Excel">
+              <i class="bi bi-file-earmark-excel me-1"></i>Excel
+            </button>
+            <button type="button" class="btn btn-outline-primary js-export-csv" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}" title="Exportar a CSV">
+              <i class="bi bi-file-earmark-text me-1"></i>CSV
+            </button>
+            <button type="button" class="btn btn-outline-danger js-export-pdf" data-table-id="carga-maestro-table" data-filename="carga-academica-{{ $ciclo->label }}" title="Imprimir / PDF">
+              <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive" style="min-height: 300px; max-height: 500px;">
+      <table id="carga-maestro-table" class="table table-hover table-sm align-middle mb-0 dashboard-data-table">
+        <thead class="table-light sticky-top">
+          <tr>
+            <th scope="col" class="sortable text-nowrap" data-sort="string" style="cursor:pointer; width: 200px;" title="Ordenar por maestro">
+              Maestro <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 140px;" title="Ordenar por carrera">
+              Carrera <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 90px;" title="Ordenar por nivel">
+              Nivel <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-center" data-sort="string" style="cursor:pointer; width: 110px;" title="Ordenar por turno">
+              Turno <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable" data-sort="string" style="cursor:pointer; width: 160px;" title="Ordenar por sede">
+              Sede <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 110px;" title="Horas de clase (horarios_det)">
+              Hrs Clase <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 110px;" title="Horas materia (HT+HP)">
+              Hrs Materia <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 110px;" title="Horas cursos (sesiones)">
+              Hrs Cursos <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="sortable text-end" data-sort="number" style="cursor:pointer; width: 100px;" title="Total horas">
+              Total <i class="bi bi-arrow-down-up text-muted ms-1" style="font-size:10px;"></i>
+            </th>
+            <th scope="col" class="text-center" style="width: 80px;">Tipo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @forelse($cargaPorMaestro as $maestro)
+            @php
+              $originLabel = match($maestro->origen) { 'HD' => 'PTC', 'CA' => 'PA', default => 'N/D' };
+              $originBadge = match($maestro->origen) {
+                'HD' => 'bg-success-subtle text-success border border-success-subtle',
+                'CA' => 'bg-info-subtle text-info border border-info-subtle',
+                default => 'bg-secondary-subtle text-secondary border'
+              };
+            @endphp
+            <tr>
+              <td>
+                <div class="fw-semibold text-truncate" style="max-width: 200px;" title="{{ $maestro->nombre }}">
+                  {{ $maestro->nombre }}
+                </div>
+                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 10px;">
+                  {{ $maestro->clave_profesor }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-purple-subtle text-purple border border-purple-subtle" style="background:rgba(147,51,234,0.12);color:var(--cat-purple)">
+                  {{ $maestro->carrera }}
+                </span>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-light text-secondary border font-monospace">{{ $maestro->nivel }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge {{ str_starts_with($maestro->turno, 'M') ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-info-subtle text-info border border-info-subtle' }}">
+                  {{ $maestro->turno }}
+                </span>
+              </td>
+              <td>
+                <div class="small text-truncate" style="max-width: 160px;" title="{{ $maestro->sede }}">
+                  <i class="bi bi-geo-alt text-muted me-1"></i>{{ $maestro->sede }}
+                </div>
+              </td>
+              <td class="text-end fw-semibold mono" style="font-family:'JetBrains Mono',monospace">
+                {{ number_format($maestro->horas_clase) }}
+              </td>
+              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">
+                {{ number_format($maestro->horas_materia) }}
+              </td>
+              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">
+                {{ number_format($maestro->horas_cursos) }}
+              </td>
+              <td class="text-end fw-bold mono" style="font-family:'JetBrains Mono',monospace; color:var(--primary)">
+                {{ number_format($maestro->total_horas) }}
+              </td>
+              <td class="text-center">
+                <span class="badge {{ $originBadge }}">{{ $originLabel }}</span>
+              </td>
+            </tr>
+          @empty
+            <tr>
+              <td colspan="10" class="text-center py-5 text-secondary">
+                <i class="bi bi-person-workspace fs-3 d-block mb-2 text-muted"></i>
+                <div>Sin carga académica registrada para este ciclo</div>
+                <div class="small text-muted mt-1">Los maestros con horarios asignados aparecerán aquí.</div>
+              </td>
+            </tr>
+          @endforelse
+        </tbody>
+        @if($cargaPorMaestro->isNotEmpty())
+          <tfoot class="table-light border-top">
+            <tr class="fw-bold">
+              <td colspan="5">Totales</td>
+              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($cargaPorMaestro->sum('horas_clase')) }}</td>
+              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($cargaPorMaestro->sum('horas_materia')) }}</td>
+              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace">{{ number_format($cargaPorMaestro->sum('horas_cursos')) }}</td>
+              <td class="text-end mono" style="font-family:'JetBrains Mono',monospace; color:var(--primary)">{{ number_format($cargaPorMaestro->sum('total_horas')) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        @endif
+      </table>
+    </div>
+
+    <div class="card-footer bg-surface-1 border-top py-2 px-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="small text-secondary js-table-info" data-table-id="carga-maestro-table">
+        Mostrando 1 a 20 de {{ number_format($cargaPorMaestro->count()) }} maestros
+      </div>
+      <div class="js-table-pagination" data-table-id="carga-maestro-table"></div>
+    </div>
+  </div>
+</section>
+
+{{-- ========== GRÁFICOS CHART.JS ========== --}}
+<section aria-labelledby="graficos-heading" class="mb-4">
+  <div class="section-heading mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <h2 id="graficos-heading" class="h6 fw-bold mb-0">Distribución Visual de la Carga Académica</h2>
+      <span class="small text-secondary">Gráficos interactivos de niveles, turnos, horas y sedes</span>
+    </div>
+    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Ciclo {{ $ciclo->label }}</span>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-header bg-surface-1 border-bottom py-2 px-3">
+          <span class="fw-bold small text-uppercase" style="letter-spacing:0.04em;">
+            <i class="bi bi-bar-chart text-primary me-1"></i> Grupos por Nivel Educativo
+          </span>
+        </div>
+        <div class="card-body p-3" style="min-height: 250px;">
+          <canvas id="chart-niveles" role="img" aria-label="Gráfico de grupos por nivel educativo"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-header bg-surface-1 border-bottom py-2 px-3">
+          <span class="fw-bold small text-uppercase" style="letter-spacing:0.04em;">
+            <i class="bi bi-pie-chart text-primary me-1"></i> Distribución por Turno
+          </span>
+        </div>
+        <div class="card-body p-3 d-flex align-items-center justify-content-center" style="min-height: 250px;">
+          <canvas id="chart-turnos" role="img" aria-label="Gráfico de distribución por turno"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-header bg-surface-1 border-bottom py-2 px-3">
+          <span class="fw-bold small text-uppercase" style="letter-spacing:0.04em;">
+            <i class="bi bi-clock-history text-primary me-1"></i> Horas por Tipo de Contratación
+          </span>
+        </div>
+        <div class="card-body p-3" style="min-height: 250px;">
+          <canvas id="chart-horas-origen" role="img" aria-label="Gráfico de horas por origen de contratación"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card h-100 shadow-sm border">
+        <div class="card-header bg-surface-1 border-bottom py-2 px-3">
+          <span class="fw-bold small text-uppercase" style="letter-spacing:0.04em;">
+            <i class="bi bi-building text-primary me-1"></i> Cursos por Sede
+          </span>
+        </div>
+        <div class="card-body p-3" style="min-height: 250px;">
+          <canvas id="chart-cursos-sede" role="img" aria-label="Gráfico de cursos por sede"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 @endsection
 
 {{-- ========== ESTILOS PROFESIONALES ========== --}}
@@ -1215,6 +1461,7 @@
 
 {{-- ========== MOTOR JAVASCRIPT DE TABLAS Y AJAX ========== --}}
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
 (function() {
   'use strict';
@@ -1423,7 +1670,7 @@
 
   // Inicializar todos los motores de tabla en la página
   document.addEventListener('DOMContentLoaded', function() {
-    const tableIds = ['materias-dashboard-table', 'planes-dashboard-table', 'students-breakdown-table', 'courses-origin-table'];
+    const tableIds = ['materias-dashboard-table', 'planes-dashboard-table', 'students-breakdown-table', 'courses-origin-table', 'carga-maestro-table'];
     tableIds.forEach(function(id) {
       AcademiaTableEngine(id);
     });
@@ -1532,7 +1779,197 @@
         document.title = originalTitle;
       });
     });
+
+    // ── Gráficos Chart.js ──
+    initAcademiaCharts();
   });
+
+  function initAcademiaCharts() {
+    if (typeof Chart === 'undefined') return;
+
+    const primaryColor = '#3b82f6';
+    const purpleColor = '#9333ea';
+    const greenColor = '#10b981';
+    const orangeColor = '#f97316';
+    const pinkColor = '#ec4899';
+    const blueColor = '#0ea5e9';
+    const grayColor = '#6b7280';
+
+    const defaultFont = { family: "'Inter', system-ui, sans-serif", size: 11 };
+    const defaultColor = '#64748b';
+
+    // ── Grupos por Nivel ──
+    const nivelesData = @json($dashboardSummary['niveles'] ?? collect());
+    if (nivelesData.length > 0) {
+      const ctx = document.getElementById('chart-niveles');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: nivelesData.map(n => n.nivel),
+            datasets: [{
+              label: 'Grupos',
+              data: nivelesData.map(n => n.grupos),
+              backgroundColor: [primaryColor, purpleColor, greenColor, orangeColor, pinkColor, blueColor],
+              borderRadius: 6,
+              barThickness: 28,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: (ctx) => ` ${ctx.parsed.y} grupos`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: defaultFont, color: defaultColor } },
+              y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { font: defaultFont, color: defaultColor, stepSize: 1 } }
+            }
+          }
+        });
+      }
+    }
+
+    // ── Distribución por Turno ──
+    const turnosData = @json($dashboardSummary['turnos'] ?? collect());
+    if (turnosData.length > 0) {
+      const ctx = document.getElementById('chart-turnos');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: turnosData.map(t => t.turno),
+            datasets: [{
+              data: turnosData.map(t => t.grupos),
+              backgroundColor: [orangeColor, blueColor, grayColor],
+              borderWidth: 2,
+              borderColor: '#fff',
+              hoverOffset: 8,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+              legend: { position: 'bottom', labels: { font: defaultFont, color: defaultColor, padding: 12, usePointStyle: true } },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: (ctx) => ` ${ctx.label}: ${ctx.parsed} grupos`
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // ── Horas por Tipo de Contratación ──
+    const horasOrigenData = @json($dashboardSummary['horasPorOrigen'] ?? collect());
+    if (horasOrigenData.length > 0) {
+      const ctx = document.getElementById('chart-horas-origen');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: horasOrigenData.map(h => {
+              const label = h.origen || 'SIN_DEFINIR';
+              return label === 'HD' ? 'PTC (Tiempo Completo)' : label === 'CA' ? 'PA (Asignatura)' : label;
+            }),
+            datasets: [{
+              label: 'Horas',
+              data: horasOrigenData.map(h => parseInt(h.horas) || 0),
+              backgroundColor: [greenColor, blueColor, grayColor],
+              borderRadius: 6,
+              barThickness: 40,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: (ctx) => ` ${ctx.parsed.y.toLocaleString()} horas`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: defaultFont, color: defaultColor } },
+              y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { font: defaultFont, color: defaultColor } }
+            }
+          }
+        });
+      }
+    }
+
+    // ── Cursos por Sede ──
+    const cursosSedeData = @json($dashboardSummary['cursosPorSede'] ?? collect());
+    if (cursosSedeData.length > 0) {
+      const ctx = document.getElementById('chart-cursos-sede');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: cursosSedeData.map(c => c.sede_nombre || `Sede ${c.id_campus}`),
+            datasets: [{
+              label: 'Cursos',
+              data: cursosSedeData.map(c => parseInt(c.cursos) || 0),
+              backgroundColor: primaryColor,
+              borderRadius: 6,
+              barThickness: 32,
+            }, {
+              label: 'Planes',
+              data: cursosSedeData.map(c => parseInt(c.planes) || 0),
+              backgroundColor: purpleColor,
+              borderRadius: 6,
+              barThickness: 32,
+            }, {
+              label: 'Materias',
+              data: cursosSedeData.map(c => parseInt(c.materias) || 0),
+              backgroundColor: greenColor,
+              borderRadius: 6,
+              barThickness: 32,
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { font: defaultFont, color: defaultColor, padding: 12, usePointStyle: true } },
+              tooltip: {
+                backgroundColor: '#1e293b',
+                padding: 10,
+                cornerRadius: 8,
+                callbacks: {
+                  label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}`
+                }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { font: defaultFont, color: defaultColor } },
+              y: { beginAtZero: true, grid: { color: '#e2e8f0' }, ticks: { font: defaultFont, color: defaultColor } }
+            }
+          }
+        });
+      }
+    }
+  }
 })();
 </script>
 @endpush

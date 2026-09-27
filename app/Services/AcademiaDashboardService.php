@@ -65,6 +65,7 @@ class AcademiaDashboardService
             'profesoresPorOrigen' => $this->professorsByOrigin($ciclo),
             'horasPorOrigen' => $this->hoursByOrigin($ciclo),
             'cursosPorOrigen' => $this->coursesByOrigin($ciclo),
+            'cargaPorMaestro' => $this->cargaPorMaestro($ciclo),
             'niveles' => $this->groupsByColumn($ciclo, 'nivel'),
             'turnos' => $turnosCollection,
             'dataQuality' => [
@@ -218,5 +219,99 @@ class AcademiaDashboardService
             ->groupBy($column)
             ->orderBy($column)
             ->get();
+    }
+
+    public function cargaPorMaestro(Ciclo $ciclo): Collection
+    {
+        $sedesMap = Sede::query()->pluck('descripcion', 'id_campus')->toArray();
+
+        $horarios = HorarioDet::query()
+            ->where('horarios_det.inicial', $ciclo->inicial)
+            ->where('horarios_det.final', $ciclo->final)
+            ->where('horarios_det.periodo', $ciclo->periodo)
+            ->where('horarios_det.activo', true)
+            ->join('grupos', 'grupos.codigo_grupo', '=', 'horarios_det.codigo_grupo')
+            ->join('profesores', 'profesores.clave_profesor', '=', 'horarios_det.clave_profesor')
+            ->selectRaw('horarios_det.clave_profesor')
+            ->selectRaw('profesores.nombre_profesor')
+            ->selectRaw('profesores.paterno')
+            ->selectRaw('profesores.materno')
+            ->selectRaw('profesores.origen_horario')
+            ->selectRaw('profesores.id_campus')
+            ->selectRaw('grupos.carrera')
+            ->selectRaw('grupos.nivel')
+            ->selectRaw('grupos.turno')
+            ->selectRaw('SUM(COALESCE(NULLIF(horarios_det.horas_semanales, 0), horarios_det.horas_teoria_practica, 0)) AS horas_clase')
+            ->groupBy('horarios_det.clave_profesor', 'profesores.nombre_profesor', 'profesores.paterno', 'profesores.materno', 'profesores.origen_horario', 'profesores.id_campus', 'grupos.carrera', 'grupos.nivel', 'grupos.turno')
+            ->get();
+
+        $cursos = Curso::query()
+            ->where('cursos.inicial', $ciclo->inicial)
+            ->where('cursos.final', $ciclo->final)
+            ->where('cursos.periodo', $ciclo->periodo)
+            ->where('cursos.activo', true)
+            ->whereNotNull('cursos.clave_profesor')
+            ->leftJoin('grupos', 'grupos.codigo_grupo', '=', 'cursos.codigo_grupo')
+            ->selectRaw('cursos.clave_profesor')
+            ->selectRaw('COALESCE(grupos.carrera, \'\') AS carrera')
+            ->selectRaw('SUM(COALESCE(cursos.sesiones, 0)) AS horas_cursos')
+            ->groupBy('cursos.clave_profesor', 'grupos.carrera')
+            ->get();
+
+        $cursosMap = [];
+        foreach ($cursos as $c) {
+            $k = $c->clave_profesor . '|' . $c->carrera;
+            $cursosMap[$k] = ($cursosMap[$k] ?? 0) + (int) $c->horas_cursos;
+        }
+
+        $materias = HorarioDet::query()
+            ->where('horarios_det.inicial', $ciclo->inicial)
+            ->where('horarios_det.final', $ciclo->final)
+            ->where('horarios_det.periodo', $ciclo->periodo)
+            ->where('horarios_det.activo', true)
+            ->join('grupos', 'grupos.codigo_grupo', '=', 'horarios_det.codigo_grupo')
+            ->join('materias', 'materias.clave_asignatura', '=', 'horarios_det.clave_asignatura')
+            ->selectRaw('horarios_det.clave_profesor')
+            ->selectRaw('grupos.carrera')
+            ->selectRaw('SUM(COALESCE(materias.horas_teoria, 0) + COALESCE(materias.horas_practica, 0)) AS horas_materia')
+            ->groupBy('horarios_det.clave_profesor', 'grupos.carrera')
+            ->get();
+
+        $materiasMap = [];
+        foreach ($materias as $m) {
+            $k = $m->clave_profesor . '|' . $m->carrera;
+            $materiasMap[$k] = ($materiasMap[$k] ?? 0) + (int) $m->horas_materia;
+        }
+
+        return $horarios->map(function ($h) use ($cursosMap, $materiasMap, $sedesMap) {
+            $carrera = $h->carrera ?? '';
+            $key = $h->clave_profesor . '|' . $carrera;
+
+            $horasClase = (int) $h->horas_clase;
+            $horasMateria = (int) ($materiasMap[$key] ?? 0);
+            $horasCursos = (int) ($cursosMap[$key] ?? 0);
+
+            $sedeId = $h->id_campus ?: 1;
+            $turnoNorm = match (strtoupper(substr(trim((string) ($h->turno ?? '')), 0, 1))) {
+                'M' => 'MATUTINO',
+                'V' => 'VESPERTINO',
+                default => strtoupper($h->turno ?? 'N/D'),
+            };
+
+            return (object) [
+                'clave_profesor' => $h->clave_profesor,
+                'nombre' => trim("{$h->paterno} {$h->materno} {$h->nombre_profesor}"),
+                'carrera' => $carrera ?: 'Sin carrera',
+                'nivel' => $h->nivel ?? 'N/D',
+                'turno' => $turnoNorm,
+                'sede' => $sedesMap[$sedeId] ?? "Sede {$sedeId}",
+                'id_campus' => $sedeId,
+                'horas_clase' => $horasClase,
+                'horas_materia' => $horasMateria,
+                'horas_cursos' => $horasCursos,
+                'total_horas' => $horasClase + $horasCursos,
+                'origen' => $h->origen_horario ?? 'SIN_DEFINIR',
+            ];
+        })->sortBy(['nombre', 'carrera'])->values();
     }
 }

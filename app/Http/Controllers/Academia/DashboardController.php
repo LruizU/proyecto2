@@ -111,7 +111,8 @@ class DashboardController extends Controller
 
         $sedesMap = $summary['sedesMap'] ?? \App\Models\Academia\Sede::pluck('descripcion', 'id_campus')->toArray();
 
-        // Pasar datos adicionales al view
+        $cargaPorMaestro = $summary['cargaPorMaestro'] ?? collect();
+
         return view('academia.dashboard.index', [
             'ciclo' => $ciclo,
             'ciclosDisponibles' => $ciclosDisponibles,
@@ -124,6 +125,7 @@ class DashboardController extends Controller
             'planes' => $planes,
             'asignaciones' => $asignaciones,
             'sedesMap' => $sedesMap,
+            'cargaPorMaestro' => $cargaPorMaestro,
         ]);
     }
 
